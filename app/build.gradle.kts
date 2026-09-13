@@ -2,6 +2,29 @@ plugins {
     id("com.android.application")
 }
 
+val trustedKeystorePayload = providers.gradleProperty("SIFTALPHA_DEBUG_KEYSTORE_B64")
+    .orElse(providers.environmentVariable("SIFTALPHA_DEBUG_KEYSTORE_B64"))
+    .orNull
+val trustedStorePassword = providers.gradleProperty("SIFTALPHA_DEBUG_STORE_PASSWORD")
+    .orElse(providers.environmentVariable("SIFTALPHA_DEBUG_STORE_PASSWORD"))
+    .orNull
+val trustedKeyAlias = providers.gradleProperty("SIFTALPHA_DEBUG_KEY_ALIAS")
+    .orElse(providers.environmentVariable("SIFTALPHA_DEBUG_KEY_ALIAS"))
+    .orNull
+val trustedKeyPassword = providers.gradleProperty("SIFTALPHA_DEBUG_KEY_PASSWORD")
+    .orElse(providers.environmentVariable("SIFTALPHA_DEBUG_KEY_PASSWORD"))
+    .orNull
+val trustedKeystoreFile = providers.gradleProperty("siftalphaDebugKeystoreFile")
+    .orElse(providers.environmentVariable("SIFTALPHA_DEBUG_KEYSTORE_FILE"))
+    .orNull
+val trustedSigningEnabled = listOf(
+    trustedKeystorePayload,
+    trustedStorePassword,
+    trustedKeyAlias,
+    trustedKeyPassword,
+    trustedKeystoreFile,
+).all { !it.isNullOrBlank() }
+
 android {
     namespace = "com.siftalpha.studio"
     compileSdk = 36
@@ -12,6 +35,23 @@ android {
         targetSdk = 36
         versionCode = 77
         versionName = "0.7.0-alpha15"
+    }
+
+    if (trustedSigningEnabled) {
+        signingConfigs.create("siftalphaTrustedDebug") {
+            storeFile = file(trustedKeystoreFile!!)
+            storePassword = trustedStorePassword!!
+            keyAlias = trustedKeyAlias!!
+            keyPassword = trustedKeyPassword!!
+        }
+    }
+
+    buildTypes {
+        getByName("debug") {
+            if (trustedSigningEnabled) {
+                signingConfig = signingConfigs.getByName("siftalphaTrustedDebug")
+            }
+        }
     }
 }
 

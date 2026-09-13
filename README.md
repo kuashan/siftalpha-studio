@@ -35,9 +35,13 @@ gradle --no-daemon :app:assembleDebug
 
 ## GitHub Actions artifacts
 
-Pull requests and pushes to `main` run localization checks, exact-head/unit checks, and an ordinary debug APK build. The APK workflow uploads an artifact named `SiftAlpha-Studio-debug-<commit-sha>` for each successful run. Open the repository's **Actions**, select a successful **Android Debug APK** run, and download its artifact.
+Pull requests and pushes to `main` run localization checks, exact-head/unit checks, and an ordinary debug APK build. The ordinary APK workflow uploads an artifact named `SiftAlpha-Studio-debug-<commit-sha>` for each successful run. Open the repository's **Actions**, select a successful **Android Debug APK** run, and download its artifact.
 
-Public CI uses the Android/Gradle default debug signing behavior. The CI debug APK is for testing and **may not upgrade over a privately signed SiftAlpha Studio build**. Stable release signing is intentionally not configured in this public repository; no signing private key or signing payload belongs in source, workflows, artifacts, or logs.
+Ordinary public CI uses the Android/Gradle default debug signing behavior and never receives trusted signing secrets. Its APK is for tests and fresh-install checks; it **may not upgrade over a stable-development-signed SiftAlpha Studio build**.
+
+The separate **Trusted Signed Debug APK** workflow is manually dispatched on the repository's `main` branch only. It restores the protected development keystore to a runner-temporary path, builds the same debug variant, verifies the certificate fingerprint and APK metadata, uploads `SiftAlpha-Studio-trusted-debug-<version>-<short-sha>`, and removes the temporary keystore. Only this trusted artifact is intended for `adb install -r` upgrade-in-place over an existing stable development install. It does not uninstall the app or clear its data.
+
+The stable signer is not stored in this repository. No signing private key, password, keystore, or base64 signing payload belongs in source, workflows, artifacts, or logs.
 
 ## Source availability / License
 

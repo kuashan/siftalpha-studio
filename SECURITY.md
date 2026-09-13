@@ -25,4 +25,8 @@ Reports are triaged in good faith. Please include the affected version or commit
 
 Workflows triggered by `pull_request` are designed to use no repository secrets. They run read-only checks and ordinary debug builds against the exact candidate commit. Forks must be treated as untrusted code.
 
-The public CI debug artifact is for testing only and may not upgrade over a privately signed build. Stable signing keys are deliberately outside this repository and outside this migration. Do not add a stable signing workflow or secret reference until its threat model, branch protections, and release procedure are documented and reviewed.
+The ordinary public CI debug artifact is for testing only and may not upgrade over a stable-development-signed build. It never references trusted signing secrets.
+
+The separate `Trusted Signed Debug APK` workflow is restricted to manual dispatch on `kuashan/siftalpha-studio`'s `main` branch. It has `contents: read` permissions, does not run for pull requests or forks, restores the keystore only to a runner-temporary file, verifies the expected certificate fingerprint before upload, and removes that file in an `always()` cleanup step. The trusted artifact is the only public-CI artifact intended for upgrade-in-place testing.
+
+The stable development signer exists only in protected GitHub Actions Secrets and a controlled private/local source. The workflow consumes these secret names only: `SIFTALPHA_DEBUG_KEYSTORE_B64`, `SIFTALPHA_DEBUG_STORE_PASSWORD`, `SIFTALPHA_DEBUG_KEY_ALIAS`, and `SIFTALPHA_DEBUG_KEY_PASSWORD`. Their values must never appear in source, workflow text, logs, artifacts, issues, pull requests, or comments. Fork pull requests never receive them.
