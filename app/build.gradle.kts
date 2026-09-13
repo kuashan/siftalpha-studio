@@ -1,5 +1,6 @@
 plugins {
     id("com.android.application")
+    id("org.jetbrains.kotlin.plugin.compose")
 }
 
 val trustedKeystorePayload = providers.gradleProperty("SIFTALPHA_DEBUG_KEYSTORE_B64")
@@ -33,8 +34,12 @@ android {
         applicationId = "com.siftalpha.studio"
         minSdk = 26
         targetSdk = 36
-        versionCode = 77
-        versionName = "0.7.0-alpha15"
+        versionCode = 78
+        versionName = "0.8.0-alpha2"
+    }
+
+    buildFeatures {
+        compose = true
     }
 
     if (trustedSigningEnabled) {
@@ -56,6 +61,14 @@ android {
 }
 
 dependencies {
+    val composeBom = platform("androidx.compose:compose-bom:2026.03.01")
+    implementation(composeBom)
+    implementation("androidx.activity:activity-compose:1.13.0")
+    implementation("androidx.compose.material3:material3")
+    implementation("androidx.compose.ui:ui")
+    implementation("androidx.compose.ui:ui-tooling-preview")
+    debugImplementation("androidx.compose.ui:ui-tooling")
+
     testImplementation("junit:junit:4.13.2")
 }
 

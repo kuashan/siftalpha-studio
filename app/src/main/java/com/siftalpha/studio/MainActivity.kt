@@ -108,7 +108,9 @@ class MainActivity : StudioActivity() {
             setTextColor(Color.rgb(165, 170, 180))
             setPadding(0, dp(2), 0, dp(8))
         })
-        root.addView(button(StudioLanguage.buttonLabel(this)) { StudioLanguage.showPicker(this) })
+        root.addView(button(getString(R.string.settings_title)) {
+            startActivity(Intent(this, SettingsActivity::class.java))
+        })
 
         permissionStateText = text(getString(R.string.home_checking_termux_permission), 17f, true).apply {
             setTextColor(Color.rgb(170, 224, 190))

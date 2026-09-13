@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_title">Settings</string>
+    <string name="settings_language_section">Language</string>
+    <string name="settings_language_summary">Choose the interface language used by SiftAlpha Studio.</string>
+    <string name="settings_language_current">Current language: %1$s</string>
+    <string name="settings_language_change">Change language</string>
+    <string name="settings_about_section">About</string>
+    <string name="settings_about_summary">A mobile workspace for local projects, runtimes, and automation tasks.</string>
+    <string name="settings_version">Version %1$s</string>
+    <string name="settings_application_id">App ID: %1$s</string>
+</resources>

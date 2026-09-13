@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_title">设置</string>
+    <string name="settings_language_section">语言</string>
+    <string name="settings_language_summary">选择 SiftAlpha Studio 使用的界面语言。</string>
+    <string name="settings_language_current">当前语言：%1$s</string>
+    <string name="settings_language_change">更改语言</string>
+    <string name="settings_about_section">关于</string>
+    <string name="settings_about_summary">用于管理本地项目、运行环境与自动化任务的移动工作区。</string>
+    <string name="settings_version">版本 %1$s</string>
+    <string name="settings_application_id">应用 ID：%1$s</string>
+</resources>

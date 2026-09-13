@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_title">設定</string>
+    <string name="settings_language_section">言語</string>
+    <string name="settings_language_summary">SiftAlpha Studio で使用する表示言語を選択します。</string>
+    <string name="settings_language_current">現在の言語：%1$s</string>
+    <string name="settings_language_change">言語を変更</string>
+    <string name="settings_about_section">このアプリについて</string>
+    <string name="settings_about_summary">ローカルプロジェクト、ランタイム、自動化タスクを管理するモバイルワークスペースです。</string>
+    <string name="settings_version">バージョン %1$s</string>
+    <string name="settings_application_id">アプリ ID：%1$s</string>
+</resources>
