@@ -26,6 +26,27 @@ val trustedSigningEnabled = listOf(
     trustedKeystoreFile,
 ).all { !it.isNullOrBlank() }
 
+val launcherIconBase64Parts = (1..5).map { index ->
+    layout.projectDirectory.file("icon/siftalpha_app_icon_v2.b64.%03d".format(index)).asFile
+}
+val generatedLauncherIconResDir = layout.buildDirectory.dir("generated/siftalphaIcon/res")
+val generatedLauncherIconFile = generatedLauncherIconResDir.map {
+    it.file("drawable-nodpi/siftalpha_app_icon_v2.webp")
+}
+val generateSiftAlphaLauncherIcon = tasks.register("generateSiftAlphaLauncherIcon") {
+    inputs.files(launcherIconBase64Parts)
+    outputs.file(generatedLauncherIconFile)
+
+    doLast {
+        val encoded = launcherIconBase64Parts.joinToString(separator = "") { part ->
+            part.readText().trim()
+        }
+        val output = generatedLauncherIconFile.get().asFile
+        output.parentFile.mkdirs()
+        output.writeBytes(java.util.Base64.getDecoder().decode(encoded))
+    }
+}
+
 android {
     namespace = "com.siftalpha.studio"
     compileSdk = 36
@@ -34,13 +55,15 @@ android {
         applicationId = "com.siftalpha.studio"
         minSdk = 26
         targetSdk = 36
-        versionCode = 81
-        versionName = "0.8.0-alpha5"
+        versionCode = 82
+        versionName = "0.8.0-alpha6"
     }
 
     buildFeatures {
         compose = true
     }
+
+    sourceSets.getByName("main").res.srcDir(generatedLauncherIconResDir)
 
     if (trustedSigningEnabled) {
         signingConfigs.create("siftalphaTrustedDebug") {
@@ -70,6 +93,10 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-tooling")
 
     testImplementation("junit:junit:4.13.2")
+}
+
+tasks.matching { it.name == "preBuild" }.configureEach {
+    dependsOn(generateSiftAlphaLauncherIcon)
 }
 
 tasks.matching { it.name == "assembleDebug" }.configureEach {
