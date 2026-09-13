@@ -1,6 +1,10 @@
 name: Trusted Signed Debug APK
 
 on:
+  push:
+    branches:
+      - main
+      - v0.8.0-uiux-rework
   workflow_dispatch:
 
 permissions:
@@ -8,14 +12,14 @@ permissions:
 
 jobs:
   build-trusted-debug-apk:
-    if: github.repository == 'kuashan/siftalpha-studio' && github.ref == 'refs/heads/main'
+    if: github.repository == 'kuashan/siftalpha-studio' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/v0.8.0-uiux-rework')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
       EXPECTED_DEBUG_CERT_SHA256: 1d96e9ce12c06e6ff0571cf8f82cf2461ac3b5261189ad06ab0747ce92f8192e
 
     steps:
-      - name: Checkout selected main commit
+      - name: Checkout exact candidate
         uses: actions/checkout@v4
         with:
           ref: ${{ github.sha }}
@@ -81,6 +85,7 @@ jobs:
           sdk_root="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-}}"
           apksigner="$sdk_root/build-tools/36.0.0/apksigner"
           aapt="$sdk_root/build-tools/36.0.0/aapt"
+          test -f "$apk"
           test -x "$apksigner"
           test -x "$aapt"
 
@@ -92,16 +97,24 @@ jobs:
 
           package_line="$("$aapt" dump badging "$apk" | sed -n "s/^package: //p" | head -n 1)"
           printf '%s\n' "$package_line" | grep -F "name='com.siftalpha.studio'" >/dev/null
-          printf '%s\n' "$package_line" | grep -F "versionCode='77'" >/dev/null
-          printf '%s\n' "$package_line" | grep -F "versionName='0.7.0-alpha15'" >/dev/null
 
+          version_code="$(printf '%s\n' "$package_line" | sed -n "s/.*versionCode='\([^']*\)'.*/\1/p")"
           version_name="$(printf '%s\n' "$package_line" | sed -n "s/.*versionName='\([^']*\)'.*/\1/p")"
+          test -n "$version_code"
+          test -n "$version_name"
+          case "$version_code" in
+            *[!0-9]*) printf 'Invalid versionCode: %s\n' "$version_code" >&2; exit 1 ;;
+          esac
+
           short_sha="${GITHUB_SHA:0:7}"
-          artifact_name="SiftAlpha-Studio-trusted-debug-${version_name}-${short_sha}"
+          artifact_name="SiftAlpha-Studio-trusted-debug-${version_name}-code${version_code}-${short_sha}"
           printf 'artifact_name=%s\n' "$artifact_name" >> "$GITHUB_OUTPUT"
+          printf 'version_name=%s\n' "$version_name" >> "$GITHUB_OUTPUT"
+          printf 'version_code=%s\n' "$version_code" >> "$GITHUB_OUTPUT"
+          printf 'cert_sha256=%s\n' "$actual" >> "$GITHUB_OUTPUT"
           printf 'Trusted signer SHA-256: %s\n' "$actual"
           printf 'Verified package: com.siftalpha.studio\n'
-          printf 'Verified version: %s (versionCode 77)\n' "$version_name"
+          printf 'Verified version: %s (versionCode %s)\n' "$version_name" "$version_code"
 
       - name: Upload trusted debug APK
         uses: actions/upload-artifact@v4
