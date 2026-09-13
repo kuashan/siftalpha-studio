@@ -1,8 +1,16 @@
 # Contributing
 
-Thanks for helping improve SiftAlpha Studio.
+SiftAlpha Studio is a public source repository, but no open-source license is granted. Do not assume that public visibility authorizes code contributions or reuse.
 
-## Before opening a pull request
+## Issues and bug reports
+
+Issues and bug reports are welcome. Do not include credentials, tokens, private keys, signing material, or other sensitive information in an issue; use [SECURITY.md](SECURITY.md) for vulnerability reports.
+
+## Invited code contributions
+
+Unsolicited code pull requests and code contributions are not accepted. Submit a code contribution only when the repository owner has explicitly invited it through GitHub. An invitation to contribute does not transfer or waive copyright; any additional permission or contribution terms must be agreed with the repository owner before work is submitted.
+
+### Before opening an invited pull request
 
 1. Keep changes focused and preserve the Android application id and current version unless the change explicitly requires a release update.
 2. Keep all five locale resource sets aligned: English, Simplified Chinese, Traditional Chinese, Japanese, and Korean.
@@ -28,4 +36,4 @@ Changes affecting project import, dependency preparation, Runtime selection, pro
 
 ## Pull requests
 
-Pull requests run read-only, fork-safe checks and an ordinary debug build. Do not add secrets to a pull request and do not rely on repository secrets being available to forked pull requests. Keep generated files, local configuration, signing material, and credentials out of commits.
+Only invited code pull requests should be opened. Pull requests run read-only, fork-safe checks and an ordinary debug build. Do not add secrets to a pull request and do not rely on repository secrets being available to forked pull requests. Keep generated files, local configuration, signing material, and credentials out of commits.

@@ -4,6 +4,10 @@
 
 This policy covers the SiftAlpha Studio source code and the public GitHub Actions workflows in this repository.
 
+## Source rights
+
+This policy does not grant a software license. Public source visibility is provided for development transparency, review, and GitHub Actions/CI/build distribution; it does not authorize use, copying, modification, redistribution, sublicensing, sale, or integration into another product. Except for rights required by GitHub Terms or GitHub platform features, request any additional permission from the repository owner through GitHub. Third-party dependencies remain subject to their own licenses.
+
 ## Reporting a vulnerability
 
 Please do not publish credentials, tokens, private keys, signing material, or a complete exploit in a public issue. If private vulnerability reporting is enabled for this repository, use that channel. Otherwise, open a minimal issue requesting a private contact method and include only enough information to establish the affected area.

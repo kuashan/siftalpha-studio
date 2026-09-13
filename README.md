@@ -39,6 +39,12 @@ Pull requests and pushes to `main` run localization checks, exact-head/unit chec
 
 Public CI uses the Android/Gradle default debug signing behavior. The CI debug APK is for testing and **may not upgrade over a privately signed SiftAlpha Studio build**. Stable release signing is intentionally not configured in this public repository; no signing private key or signing payload belongs in source, workflows, artifacts, or logs.
 
-## Open-source status
+## Source availability / License
 
-This repository is the public source distribution of SiftAlpha Studio and is licensed under Apache-2.0. See [SECURITY.md](SECURITY.md) for disclosure and signing policy, and [CONTRIBUTING.md](CONTRIBUTING.md) for the contribution and validation requirements.
+This is a public source repository for SiftAlpha Studio Android development and CI. The source is public primarily for development transparency, review, and GitHub Actions/CI/build distribution.
+
+**Public source. All Rights Reserved. No open-source license.**
+
+Public visibility does not grant permission to use, copy, modify, redistribute, sublicense, sell, or integrate this project into another product. Except for rights required by GitHub Terms or GitHub platform features, any additional permission must be obtained from the repository owner through GitHub. See [COPYRIGHT.md](COPYRIGHT.md). Third-party dependencies remain subject to their own licenses as described in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+
+See [SECURITY.md](SECURITY.md) for disclosure and signing policy, and [CONTRIBUTING.md](CONTRIBUTING.md) for contribution and validation requirements.
