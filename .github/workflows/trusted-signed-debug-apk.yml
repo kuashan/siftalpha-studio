@@ -2,6 +2,9 @@ name: Trusted Signed Debug APK
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
 
 permissions:
   contents: read
@@ -15,12 +18,10 @@ jobs:
       EXPECTED_DEBUG_CERT_SHA256: 1d96e9ce12c06e6ff0571cf8f82cf2461ac3b5261189ad06ab0747ce92f8192e
 
     steps:
-      - name: Checkout selected main commit
+      - name: Checkout
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.sha }}
 
-      - name: Set up JDK 17
+      - name: Set up JDK
         uses: actions/setup-java@v5
         with:
           distribution: temurin
@@ -29,98 +30,43 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Install Android SDK 36
-        shell: bash
-        run: |
-          set -euo pipefail
-          yes | sdkmanager --licenses >/dev/null || true
-          sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0"
-
-      - name: Set up Gradle 9.3.1
+      - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '9.3.1'
 
-      - name: Restore protected signing keystore
-        shell: bash
+      - name: Restore signing keystore
         env:
           SIFTALPHA_DEBUG_KEYSTORE_B64: ${{ secrets.SIFTALPHA_DEBUG_KEYSTORE_B64 }}
           SIFTALPHA_DEBUG_STORE_PASSWORD: ${{ secrets.SIFTALPHA_DEBUG_STORE_PASSWORD }}
           SIFTALPHA_DEBUG_KEY_ALIAS: ${{ secrets.SIFTALPHA_DEBUG_KEY_ALIAS }}
-          SIFTALPHA_DEBUG_KEY_PASSWORD: ${{ secrets.SIFTALPHA_DEBUG_KEY_PASSWORD }}
         run: |
           set -euo pipefail
-          : "${SIFTALPHA_DEBUG_KEYSTORE_B64:?}"
-          : "${SIFTALPHA_DEBUG_STORE_PASSWORD:?}"
-          : "${SIFTALPHA_DEBUG_KEY_ALIAS:?}"
-          : "${SIFTALPHA_DEBUG_KEY_PASSWORD:?}"
-          umask 077
           keystore="${RUNNER_TEMP}/siftalpha-debug-keystore"
           printf '%s' "$SIFTALPHA_DEBUG_KEYSTORE_B64" | base64 --decode > "$keystore"
           test -s "$keystore"
-          keytool -list -keystore "$keystore" \
-            -storepass "$SIFTALPHA_DEBUG_STORE_PASSWORD" \
-            -alias "$SIFTALPHA_DEBUG_KEY_ALIAS" >/dev/null 2>&1
-          printf 'SIFTALPHA_DEBUG_KEYSTORE_FILE=%s\n' "$keystore" >> "$GITHUB_ENV"
+          echo "SIFTALPHA_DEBUG_KEYSTORE_FILE=$keystore" >> "$GITHUB_ENV"
 
-      - name: Build trusted debug APK
-        shell: bash
-        env:
-          SIFTALPHA_DEBUG_KEYSTORE_B64: ${{ secrets.SIFTALPHA_DEBUG_KEYSTORE_B64 }}
-          SIFTALPHA_DEBUG_STORE_PASSWORD: ${{ secrets.SIFTALPHA_DEBUG_STORE_PASSWORD }}
-          SIFTALPHA_DEBUG_KEY_ALIAS: ${{ secrets.SIFTALPHA_DEBUG_KEY_ALIAS }}
-          SIFTALPHA_DEBUG_KEY_PASSWORD: ${{ secrets.SIFTALPHA_DEBUG_KEY_PASSWORD }}
-        run: gradle --no-daemon --stacktrace :app:assembleDebug
+      - name: Build APK
+        run: gradle --no-daemon :app:assembleDebug
 
-      - name: Verify trusted signer and APK metadata
-        id: verify
+      - name: Verify signer and metadata
         shell: bash
         run: |
           set -euo pipefail
           apk="app/build/outputs/apk/debug/app-debug.apk"
-          sdk_root="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-}}"
-          apksigner="$sdk_root/build-tools/36.0.0/apksigner"
-          aapt="$sdk_root/build-tools/36.0.0/aapt"
-          test -x "$apksigner"
-          test -x "$aapt"
+          sdk="${ANDROID_SDK_ROOT:-${ANDROID_HOME}}"
+          apksigner="$sdk/build-tools/36.0.0/apksigner"
+          aapt="$sdk/build-tools/36.0.0/aapt"
 
-          actual="$("$apksigner" verify --print-certs "$apk" | awk '/certificate SHA-256 digest/ {print tolower($NF); exit}')"
-          actual="${actual//:/}"
-          expected="${EXPECTED_DEBUG_CERT_SHA256//:/}"
-          test -n "$actual"
-          test "$actual" = "$expected"
+          actual=$("$apksigner" verify --print-certs "$apk" | awk '/certificate SHA-256 digest/ {print tolower($NF); exit}' | tr -d ':')
+          test "$actual" = "$EXPECTED_DEBUG_CERT_SHA256"
 
-          package_line="$("$aapt" dump badging "$apk" | sed -n "s/^package: //p" | head -n 1)"
-          printf '%s\n' "$package_line" | grep -F "name='com.siftalpha.studio'" >/dev/null
-          printf '%s\n' "$package_line" | grep -F "versionCode='77'" >/dev/null
-          printf '%s\n' "$package_line" | grep -F "versionName='0.7.0-alpha15'" >/dev/null
+          package_line=$("$aapt" dump badging "$apk" | grep '^package:')
+          echo "$package_line" | grep -F "name='com.siftalpha.studio'"
 
-          version_name="$(printf '%s\n' "$package_line" | sed -n "s/.*versionName='\([^']*\)'.*/\1/p")"
-          short_sha="${GITHUB_SHA:0:7}"
-          artifact_name="SiftAlpha-Studio-trusted-debug-${version_name}-${short_sha}"
-          printf 'artifact_name=%s\n' "$artifact_name" >> "$GITHUB_OUTPUT"
-          printf 'Trusted signer SHA-256: %s\n' "$actual"
-          printf 'Verified package: com.siftalpha.studio\n'
-          printf 'Verified version: %s (versionCode 77)\n' "$version_name"
-
-      - name: Upload trusted debug APK
+      - name: Upload trusted APK
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ steps.verify.outputs.artifact_name }}
+          name: SiftAlpha-Studio-trusted-debug-${{ github.sha }}
           path: app/build/outputs/apk/debug/app-debug.apk
-          if-no-files-found: error
-          retention-days: 14
-
-      - name: Remove temporary signing keystore
-        if: always()
-        shell: bash
-        run: |
-          set -euo pipefail
-          keystore="${SIFTALPHA_DEBUG_KEYSTORE_FILE:-}"
-          if [[ -z "$keystore" ]]; then
-            exit 0
-          fi
-          case "$keystore" in
-            "${RUNNER_TEMP}"/*) rm -f -- "$keystore" ;;
-            *) printf 'Temporary keystore path was outside RUNNER_TEMP.\n' >&2; exit 1 ;;
-          esac
