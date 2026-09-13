@@ -29,10 +29,10 @@
     <application
         android:name=".StudioApplication"
         android:allowBackup="true"
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@mipmap/siftalpha_launcher"
         android:label="@string/app_name"
         android:localeConfig="@xml/locales_config"
-        android:roundIcon="@mipmap/ic_launcher_round"
+        android:roundIcon="@mipmap/siftalpha_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
 
