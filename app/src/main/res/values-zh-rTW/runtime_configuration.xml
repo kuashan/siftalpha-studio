@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="runtime_environment_label">環境：%1$s</string>
+    <string name="runtime_environment_unknown">未檢測</string>
+    <string name="runtime_state_not_running">未執行</string>
+    <string name="runtime_configuration_status_none">設定：未宣告必要項目</string>
+    <string name="runtime_configuration_status_candidates">設定：發現 %1$d 項可設定憑證（不阻止執行）</string>
+    <string name="runtime_configuration_status_missing">設定：缺少 %1$d 項必要設定</string>
+    <string name="runtime_configuration_status_ready">設定：必要項目已滿足</string>
+    <string name="runtime_configuration_button">設定</string>
+    <string name="runtime_configuration_title">專案設定 · %1$s</string>
+    <string name="runtime_configuration_summary">必要設定來自 .project.json；.env.example 只提供候選提示，Studio 不會自行猜測並將其視為必要項目。</string>
+    <string name="runtime_configuration_required_section">必要設定</string>
+    <string name="runtime_configuration_candidate_section">候選憑證（選用）</string>
+    <string name="runtime_configuration_none">目前專案沒有宣告必要設定，也沒有發現可設定的憑證候選。</string>
+    <string name="runtime_configuration_item_protected">已由 Studio 安全設定</string>
+    <string name="runtime_configuration_item_project_env">專案 .env 已設定</string>
+    <string name="runtime_configuration_item_missing">未設定</string>
+    <string name="runtime_configuration_item_optional">選用候選</string>
+    <string name="runtime_configuration_edit_title">設定 %1$s</string>
+    <string name="runtime_configuration_edit_secret_message">此值會由 Android Keystore 加密儲存在本機 App 私有儲存空間，執行時以環境變數注入，不會寫入專案原始碼或 GitHub。</string>
+    <string name="runtime_configuration_edit_value_message">此值會安全儲存在本機並於執行時注入。Studio 不會自動改寫專案自己的 .env。</string>
+    <string name="runtime_configuration_value_hint">輸入 %1$s</string>
+    <string name="runtime_configuration_save">儲存</string>
+    <string name="runtime_configuration_clear">清除 Studio 設定</string>
+    <string name="runtime_configuration_saved">%1$s 已安全儲存</string>
+    <string name="runtime_configuration_cleared">已清除 %1$s 的 Studio 設定</string>
+    <string name="runtime_configuration_save_failed">儲存專案設定失敗</string>
+    <string name="runtime_configuration_clear_failed">清除專案設定失敗</string>
+    <string name="runtime_configuration_blank_value">請輸入 %1$s</string>
+    <string name="runtime_preflight_title">啟動前需要完成設定</string>
+    <string name="runtime_preflight_message">目前專案明確宣告下列設定為必要項目。完成這些必要項目前，Studio 不會啟動 Python 程序：</string>
+    <string name="runtime_preflight_project_env_note">已在專案 .env 中設定的值不會重複要求輸入。</string>
+    <string name="runtime_preflight_save_and_run">儲存並執行</string>
+    <string name="runtime_preflight_save_failed">無法儲存啟動設定</string>
+    <string name="runtime_configuration_runtime_missing_title">執行需要補充設定</string>
+    <string name="runtime_configuration_runtime_missing_message">專案執行結果明確回報缺少以下環境變數：\n\n%1$s\n\n可以進入「設定」安全儲存，然後重新執行。</string>
+    <string name="runtime_configuration_runtime_unnamed_title">執行需要憑證</string>
+    <string name="runtime_configuration_runtime_unnamed_message">專案明確回報需要 API 金鑰或憑證，但沒有提供可靠的環境變數名稱。Studio 不會猜測名稱；請開啟「設定」查看專案宣告與候選憑證。</string>
+</resources>

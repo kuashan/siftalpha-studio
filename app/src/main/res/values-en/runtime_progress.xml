@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="runtime_prepare_live_title">Preparing environment</string>
+    <string name="runtime_prepare_live_project">Project: %1$s</string>
+    <string name="runtime_prepare_live_execution">Primary executionId: %1$d</string>
+    <string name="runtime_prepare_live_stage">Stage: %1$s</string>
+    <string name="runtime_prepare_live_source">Dependency source: %1$s</string>
+    <string name="runtime_prepare_live_log_size">Current log: %1$s</string>
+    <string name="runtime_prepare_live_tail">Latest output:</string>
+    <string name="runtime_prepare_live_waiting">Waiting for the installer to produce output…</string>
+    <string name="runtime_prepare_live_stage_starting">Starting preparation</string>
+    <string name="runtime_prepare_live_stage_venv">Creating or reusing Python virtual environment</string>
+    <string name="runtime_prepare_live_stage_requirements">Installing requirements.txt dependencies</string>
+    <string name="runtime_prepare_live_stage_pyproject">Installing pyproject.toml dependencies</string>
+    <string name="runtime_prepare_live_stage_finalizing">Checking and finalizing environment</string>
+    <string name="runtime_prepare_live_stage_unknown">Preparing environment</string>
+</resources>

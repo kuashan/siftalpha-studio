@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="runtime_prepare_live_title">環境を準備中</string>
+    <string name="runtime_prepare_live_project">プロジェクト：%1$s</string>
+    <string name="runtime_prepare_live_execution">メイン executionId：%1$d</string>
+    <string name="runtime_prepare_live_stage">段階：%1$s</string>
+    <string name="runtime_prepare_live_source">依存関係ソース：%1$s</string>
+    <string name="runtime_prepare_live_log_size">現在のログ：%1$s</string>
+    <string name="runtime_prepare_live_tail">最新の出力：</string>
+    <string name="runtime_prepare_live_waiting">インストーラーの出力を待っています…</string>
+    <string name="runtime_prepare_live_stage_starting">準備処理を開始</string>
+    <string name="runtime_prepare_live_stage_venv">Python 仮想環境を作成または再利用</string>
+    <string name="runtime_prepare_live_stage_requirements">requirements.txt の依存関係をインストール</string>
+    <string name="runtime_prepare_live_stage_pyproject">pyproject.toml の依存関係をインストール</string>
+    <string name="runtime_prepare_live_stage_finalizing">環境を確認して完了</string>
+    <string name="runtime_prepare_live_stage_unknown">環境を準備</string>
+</resources>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="runtime_project_output_expand">輸出 / 日誌 ▸</string>
+    <string name="runtime_project_output_collapse">輸出 / 日誌 ▾</string>
+    <string name="runtime_project_output_copy_all">複製全部</string>
+    <string name="runtime_project_output_copied">已複製全部輸出</string>
+    <string name="runtime_center_section_system_output">匯入 / 系統輸出</string>
+    <string name="runtime_button_refresh_logs">重新整理日誌</string>
+    <string name="runtime_web_not_listening_title">網頁連接埠尚未就緒</string>
+    <string name="runtime_web_not_listening_message">Studio 已偵測到本機 Web 位址，但 %1$s 目前沒有可連線的監聽連接埠。瀏覽器入口會保持停用，Studio 並會繼續自動偵測。</string>
+</resources>

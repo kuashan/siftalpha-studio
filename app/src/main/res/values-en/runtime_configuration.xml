@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="runtime_environment_label">Environment: %1$s</string>
+    <string name="runtime_environment_unknown">Not checked</string>
+    <string name="runtime_state_not_running">Not running</string>
+    <string name="runtime_configuration_status_none">Configuration: no required items declared</string>
+    <string name="runtime_configuration_status_candidates">Configuration: %1$d credential candidates found (does not block run)</string>
+    <string name="runtime_configuration_status_missing">Configuration: %1$d required items missing</string>
+    <string name="runtime_configuration_status_ready">Configuration: required items satisfied</string>
+    <string name="runtime_configuration_button">Configuration</string>
+    <string name="runtime_configuration_title">Project configuration · %1$s</string>
+    <string name="runtime_configuration_summary">Required items come from .project.json. .env.example contributes suggestions only; Studio never promotes them to requirements by guessing.</string>
+    <string name="runtime_configuration_required_section">Required configuration</string>
+    <string name="runtime_configuration_candidate_section">Credential candidates (optional)</string>
+    <string name="runtime_configuration_none">This project declares no required configuration and no configurable credential candidates were found.</string>
+    <string name="runtime_configuration_item_protected">Securely configured in Studio</string>
+    <string name="runtime_configuration_item_project_env">Configured in project .env</string>
+    <string name="runtime_configuration_item_missing">Not configured</string>
+    <string name="runtime_configuration_item_optional">Optional candidate</string>
+    <string name="runtime_configuration_edit_title">Configure %1$s</string>
+    <string name="runtime_configuration_edit_secret_message">This value is encrypted with Android Keystore in app-private storage and injected as an environment variable at runtime. It is not written to project source or GitHub.</string>
+    <string name="runtime_configuration_edit_value_message">This value is stored locally and injected at runtime. Studio does not automatically rewrite the project .env file.</string>
+    <string name="runtime_configuration_value_hint">Enter %1$s</string>
+    <string name="runtime_configuration_save">Save</string>
+    <string name="runtime_configuration_clear">Clear Studio value</string>
+    <string name="runtime_configuration_saved">%1$s was saved securely</string>
+    <string name="runtime_configuration_cleared">Studio configuration for %1$s was cleared</string>
+    <string name="runtime_configuration_save_failed">Could not save project configuration</string>
+    <string name="runtime_configuration_clear_failed">Could not clear project configuration</string>
+    <string name="runtime_configuration_blank_value">Enter %1$s</string>
+    <string name="runtime_preflight_title">Configuration required before launch</string>
+    <string name="runtime_preflight_message">This project explicitly declares the following configuration as required. Studio will not start the Python process until these items are complete:</string>
+    <string name="runtime_preflight_project_env_note">Values already configured in the project .env file are not requested again.</string>
+    <string name="runtime_preflight_save_and_run">Save and run</string>
+    <string name="runtime_preflight_save_failed">Could not save launch configuration</string>
+    <string name="runtime_configuration_runtime_missing_title">Runtime configuration required</string>
+    <string name="runtime_configuration_runtime_missing_message">The project explicitly reported these environment variables as missing:\n\n%1$s\n\nOpen Configuration to save them securely, then run again.</string>
+    <string name="runtime_configuration_runtime_unnamed_title">Runtime credential required</string>
+    <string name="runtime_configuration_runtime_unnamed_message">The project explicitly reported that an API key or credential is required, but it did not provide a reliable environment-variable name. Studio will not guess a name; open Configuration to review declared items and credential candidates.</string>
+</resources>

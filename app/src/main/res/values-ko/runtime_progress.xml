@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="runtime_prepare_live_title">환경 준비 중</string>
+    <string name="runtime_prepare_live_project">프로젝트: %1$s</string>
+    <string name="runtime_prepare_live_execution">기본 작업 executionId: %1$d</string>
+    <string name="runtime_prepare_live_stage">단계: %1$s</string>
+    <string name="runtime_prepare_live_source">의존성 소스: %1$s</string>
+    <string name="runtime_prepare_live_log_size">현재 로그: %1$s</string>
+    <string name="runtime_prepare_live_tail">최신 출력:</string>
+    <string name="runtime_prepare_live_waiting">설치 프로그램 출력을 기다리는 중…</string>
+    <string name="runtime_prepare_live_stage_starting">준비 작업 시작</string>
+    <string name="runtime_prepare_live_stage_venv">Python 가상 환경 생성 또는 재사용</string>
+    <string name="runtime_prepare_live_stage_requirements">requirements.txt 의존성 설치</string>
+    <string name="runtime_prepare_live_stage_pyproject">pyproject.toml 의존성 설치</string>
+    <string name="runtime_prepare_live_stage_finalizing">환경 확인 및 마무리</string>
+    <string name="runtime_prepare_live_stage_unknown">환경 준비</string>
+</resources>

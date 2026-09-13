@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="runtime_project_output_expand">输出 / 日志 ▸</string>
+    <string name="runtime_project_output_collapse">输出 / 日志 ▾</string>
+    <string name="runtime_project_output_copy_all">复制全部</string>
+    <string name="runtime_project_output_copied">已复制全部输出</string>
+    <string name="runtime_center_section_system_output">导入 / 系统输出</string>
+    <string name="runtime_button_refresh_logs">刷新日志</string>
+    <string name="runtime_web_not_listening_title">网页端口尚未就绪</string>
+    <string name="runtime_web_not_listening_message">Studio 已检测到本地 Web 地址，但 %1$s 当前没有可连接的监听端口。浏览器入口会保持禁用，并继续自动检测。</string>
+</resources>

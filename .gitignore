@@ -1,0 +1,30 @@
+.gradle/
+**/build/
+.idea/
+.vscode/
+local.properties
+*.iml
+.DS_Store
+
+# Local environment and credentials
+.env
+.env.*
+!.env.example
+*.credentials
+*.credentials.*
+secrets/
+
+# Signing material and private certificates
+*.jks
+*.keystore
+*.p12
+*.pfx
+*.pem
+*.key
+*.der
+signing.properties
+**/signing.properties
+
+# Local-only workflow variants
+.github/workflows/*-local.yml
+.github/workflows/*.secret.yml

@@ -1,0 +1,10 @@
+{
+  "name": "SiftAlpha-OCI-A1-Catcher",
+  "description": "Oracle Cloud Ampere A1 capacity catcher adapted for SiftAlpha Studio Runtime.",
+  "entry": "main.py",
+  "run": "python 'main.py'",
+  "type": "python",
+  "web": {
+    "enabled": false
+  }
+}

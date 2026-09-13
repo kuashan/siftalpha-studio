@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">SiftAlpha Studio</string>
+    <string name="language_button">Language · %1$s</string>
+    <string name="language_title">Choose app language</string>
+    <string name="common_cancel">Cancel</string>
+    <string name="common_confirm">Confirm</string>
+    <string name="common_close">Close</string>
+    <string name="common_back">Back</string>
+    <string name="crash_title">SiftAlpha Studio · Previous crash report</string>
+    <string name="crash_privacy">This report stays in the app’s private local storage and is not uploaded. Send the complete report below to support for diagnosis.</string>
+    <string name="crash_back">Recorded · Return to Studio</string>
+</resources>

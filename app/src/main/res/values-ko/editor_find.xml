@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="editor_find">찾기</string>
+    <string name="editor_find_hint">현재 파일에서 찾기</string>
+    <string name="editor_find_enter_query">찾을 내용을 입력하세요</string>
+    <string name="editor_find_no_matches">일치 항목 없음</string>
+    <string name="editor_find_status">%1$d / %2$d</string>
+    <string name="editor_find_case_sensitive">대소문자 구분</string>
+    <string name="editor_find_previous">이전 일치 항목</string>
+    <string name="editor_find_next">다음 일치 항목</string>
+    <string name="editor_find_close">찾기 닫기</string>
+</resources>

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="runtime_environment_label">環境：%1$s</string>
+    <string name="runtime_environment_unknown">未確認</string>
+    <string name="runtime_state_not_running">未実行</string>
+    <string name="runtime_configuration_status_none">設定：必須項目の宣言なし</string>
+    <string name="runtime_configuration_status_candidates">設定：設定可能な資格情報候補を %1$d 件検出（実行は妨げません）</string>
+    <string name="runtime_configuration_status_missing">設定：必須設定が %1$d 件不足</string>
+    <string name="runtime_configuration_status_ready">設定：必須項目を満たしています</string>
+    <string name="runtime_configuration_button">設定</string>
+    <string name="runtime_configuration_title">プロジェクト設定 · %1$s</string>
+    <string name="runtime_configuration_summary">必須設定は .project.json から取得します。.env.example は候補の案内だけに使用し、Studio が推測で必須項目にすることはありません。</string>
+    <string name="runtime_configuration_required_section">必須設定</string>
+    <string name="runtime_configuration_candidate_section">資格情報候補（任意）</string>
+    <string name="runtime_configuration_none">このプロジェクトには必須設定の宣言も、設定可能な資格情報候補もありません。</string>
+    <string name="runtime_configuration_item_protected">Studio に安全に設定済み</string>
+    <string name="runtime_configuration_item_project_env">プロジェクトの .env に設定済み</string>
+    <string name="runtime_configuration_item_missing">未設定</string>
+    <string name="runtime_configuration_item_optional">任意の候補</string>
+    <string name="runtime_configuration_edit_title">%1$s を設定</string>
+    <string name="runtime_configuration_edit_secret_message">この値は Android Keystore で暗号化してアプリ専用領域に保存し、実行時に環境変数として注入します。プロジェクトのソースや GitHub には書き込みません。</string>
+    <string name="runtime_configuration_edit_value_message">この値は端末内に安全に保存して実行時に注入します。Studio はプロジェクトの .env を自動で書き換えません。</string>
+    <string name="runtime_configuration_value_hint">%1$s を入力</string>
+    <string name="runtime_configuration_save">保存</string>
+    <string name="runtime_configuration_clear">Studio の設定を消去</string>
+    <string name="runtime_configuration_saved">%1$s を安全に保存しました</string>
+    <string name="runtime_configuration_cleared">%1$s の Studio 設定を消去しました</string>
+    <string name="runtime_configuration_save_failed">プロジェクト設定を保存できませんでした</string>
+    <string name="runtime_configuration_clear_failed">プロジェクト設定を消去できませんでした</string>
+    <string name="runtime_configuration_blank_value">%1$s を入力してください</string>
+    <string name="runtime_preflight_title">起動前に設定が必要です</string>
+    <string name="runtime_preflight_message">このプロジェクトは次の設定を必須項目として明示しています。これらを完了するまで Studio は Python プロセスを起動しません：</string>
+    <string name="runtime_preflight_project_env_note">プロジェクトの .env に既に設定されている値は再入力を求めません。</string>
+    <string name="runtime_preflight_save_and_run">保存して実行</string>
+    <string name="runtime_preflight_save_failed">起動設定を保存できませんでした</string>
+    <string name="runtime_configuration_runtime_missing_title">実行に設定が必要です</string>
+    <string name="runtime_configuration_runtime_missing_message">プロジェクトの実行結果から、次の環境変数が不足していることが明確に報告されました：\n\n%1$s\n\n「設定」から安全に保存して、再度実行できます。</string>
+    <string name="runtime_configuration_runtime_unnamed_title">実行に資格情報が必要です</string>
+    <string name="runtime_configuration_runtime_unnamed_message">プロジェクトは API キーまたは資格情報が必要だと明確に報告しましたが、信頼できる環境変数名は示していません。Studio は名前を推測しません。「設定」を開いてプロジェクトの宣言と資格情報候補を確認してください。</string>
+</resources>

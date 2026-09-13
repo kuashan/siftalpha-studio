@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Transparent extraction of the generated SiftAlpha Studio Logo artwork. -->
+    <item
+        android:drawable="@drawable/ic_launcher_art"
+        android:gravity="fill" />
+    <!-- A small terminal prompt keeps the product identity legible at launcher scale. -->
+    <item
+        android:drawable="@drawable/ic_launcher_prompt"
+        android:gravity="fill" />
+</layer-list>

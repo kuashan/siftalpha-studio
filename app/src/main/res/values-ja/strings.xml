@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">SiftAlpha Studio</string>
+    <string name="language_button">言語 · %1$s</string>
+    <string name="language_title">アプリの言語を選択</string>
+    <string name="common_cancel">キャンセル</string>
+    <string name="common_confirm">確認</string>
+    <string name="common_close">閉じる</string>
+    <string name="common_back">戻る</string>
+    <string name="crash_title">SiftAlpha Studio · 前回のクラッシュレポート</string>
+    <string name="crash_privacy">このレポートはアプリの非公開ローカルストレージにのみ保存され、アップロードされません。診断のため、以下の全文をサポートへ送ってください。</string>
+    <string name="crash_back">記録済み · Studio に戻る</string>
+</resources>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="editor_find">查找</string>
+    <string name="editor_find_hint">在当前文件中查找</string>
+    <string name="editor_find_enter_query">输入要查找的内容</string>
+    <string name="editor_find_no_matches">没有匹配项</string>
+    <string name="editor_find_status">%1$d / %2$d</string>
+    <string name="editor_find_case_sensitive">区分大小写</string>
+    <string name="editor_find_previous">上一个匹配项</string>
+    <string name="editor_find_next">下一个匹配项</string>
+    <string name="editor_find_close">关闭查找</string>
+</resources>

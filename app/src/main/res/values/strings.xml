@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">SiftAlpha Studio</string>
+    <string name="language_button">语言 · %1$s</string>
+    <string name="language_title">选择应用语言</string>
+    <string name="common_cancel">取消</string>
+    <string name="common_confirm">确认</string>
+    <string name="common_close">关闭</string>
+    <string name="common_back">返回</string>
+    <string name="crash_title">SiftAlpha Studio · 上次崩溃报告</string>
+    <string name="crash_privacy">这份报告只保存在本机 App 私有存储，没有上传。请把下面完整内容发给支持人员即可定位。</string>
+    <string name="crash_back">我已记录，返回 Studio</string>
+</resources>

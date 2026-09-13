@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="runtime_environment_label">환경: %1$s</string>
+    <string name="runtime_environment_unknown">확인 안 됨</string>
+    <string name="runtime_state_not_running">실행 안 함</string>
+    <string name="runtime_configuration_status_none">구성: 필수 항목 선언 없음</string>
+    <string name="runtime_configuration_status_candidates">구성: 설정 가능한 자격 증명 후보 %1$d개 발견(실행을 차단하지 않음)</string>
+    <string name="runtime_configuration_status_missing">구성: 필수 설정 %1$d개 누락</string>
+    <string name="runtime_configuration_status_ready">구성: 필수 항목 충족</string>
+    <string name="runtime_configuration_button">구성</string>
+    <string name="runtime_configuration_title">프로젝트 구성 · %1$s</string>
+    <string name="runtime_configuration_summary">필수 설정은 .project.json에서 가져옵니다. .env.example은 후보 안내만 제공하며 Studio는 추측으로 필수 항목으로 승격하지 않습니다.</string>
+    <string name="runtime_configuration_required_section">필수 구성</string>
+    <string name="runtime_configuration_candidate_section">자격 증명 후보(선택 사항)</string>
+    <string name="runtime_configuration_none">이 프로젝트에는 선언된 필수 구성도, 설정 가능한 자격 증명 후보도 없습니다.</string>
+    <string name="runtime_configuration_item_protected">Studio에 안전하게 설정됨</string>
+    <string name="runtime_configuration_item_project_env">프로젝트 .env에 설정됨</string>
+    <string name="runtime_configuration_item_missing">설정되지 않음</string>
+    <string name="runtime_configuration_item_optional">선택 후보</string>
+    <string name="runtime_configuration_edit_title">%1$s 설정</string>
+    <string name="runtime_configuration_edit_secret_message">이 값은 Android Keystore로 암호화되어 앱 전용 저장소에 보관되고 실행 시 환경 변수로 주입됩니다. 프로젝트 소스나 GitHub에는 기록되지 않습니다.</string>
+    <string name="runtime_configuration_edit_value_message">이 값은 로컬에 안전하게 저장되고 실행 시 주입됩니다. Studio는 프로젝트의 .env 파일을 자동으로 수정하지 않습니다.</string>
+    <string name="runtime_configuration_value_hint">%1$s 입력</string>
+    <string name="runtime_configuration_save">저장</string>
+    <string name="runtime_configuration_clear">Studio 설정 지우기</string>
+    <string name="runtime_configuration_saved">%1$s이(가) 안전하게 저장되었습니다</string>
+    <string name="runtime_configuration_cleared">%1$s의 Studio 설정을 지웠습니다</string>
+    <string name="runtime_configuration_save_failed">프로젝트 구성을 저장하지 못했습니다</string>
+    <string name="runtime_configuration_clear_failed">프로젝트 구성을 지우지 못했습니다</string>
+    <string name="runtime_configuration_blank_value">%1$s을(를) 입력하세요</string>
+    <string name="runtime_preflight_title">실행 전에 구성이 필요합니다</string>
+    <string name="runtime_preflight_message">이 프로젝트는 다음 구성을 필수 항목으로 명시했습니다. 해당 항목이 완료될 때까지 Studio는 Python 프로세스를 시작하지 않습니다:</string>
+    <string name="runtime_preflight_project_env_note">프로젝트 .env에 이미 설정된 값은 다시 입력하도록 요구하지 않습니다.</string>
+    <string name="runtime_preflight_save_and_run">저장 후 실행</string>
+    <string name="runtime_preflight_save_failed">실행 구성을 저장하지 못했습니다</string>
+    <string name="runtime_configuration_runtime_missing_title">실행 구성이 필요합니다</string>
+    <string name="runtime_configuration_runtime_missing_message">프로젝트 실행 결과에서 다음 환경 변수가 누락되었다고 명확히 보고했습니다:\n\n%1$s\n\n“구성”에서 안전하게 저장한 뒤 다시 실행할 수 있습니다.</string>
+    <string name="runtime_configuration_runtime_unnamed_title">실행 자격 증명이 필요합니다</string>
+    <string name="runtime_configuration_runtime_unnamed_message">프로젝트가 API 키 또는 자격 증명이 필요하다고 명확히 보고했지만 신뢰할 수 있는 환경 변수 이름은 제공하지 않았습니다. Studio는 이름을 추측하지 않습니다. “구성”을 열어 프로젝트 선언과 자격 증명 후보를 확인하세요.</string>
+</resources>

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="runtime_prepare_live_title">准备环境进行中</string>
+    <string name="runtime_prepare_live_project">项目：%1$s</string>
+    <string name="runtime_prepare_live_execution">主任务 executionId：%1$d</string>
+    <string name="runtime_prepare_live_stage">阶段：%1$s</string>
+    <string name="runtime_prepare_live_source">依赖来源：%1$s</string>
+    <string name="runtime_prepare_live_log_size">当前日志：%1$s</string>
+    <string name="runtime_prepare_live_tail">最新输出：</string>
+    <string name="runtime_prepare_live_waiting">正在等待安装器产生输出…</string>
+    <string name="runtime_prepare_live_stage_starting">启动准备任务</string>
+    <string name="runtime_prepare_live_stage_venv">创建或复用 Python 虚拟环境</string>
+    <string name="runtime_prepare_live_stage_requirements">安装 requirements.txt 依赖</string>
+    <string name="runtime_prepare_live_stage_pyproject">安装 pyproject.toml 依赖</string>
+    <string name="runtime_prepare_live_stage_finalizing">检查并完成环境</string>
+    <string name="runtime_prepare_live_stage_unknown">准备环境</string>
+</resources>

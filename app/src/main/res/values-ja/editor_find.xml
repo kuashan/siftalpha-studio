@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="editor_find">検索</string>
+    <string name="editor_find_hint">現在のファイル内を検索</string>
+    <string name="editor_find_enter_query">検索する文字列を入力</string>
+    <string name="editor_find_no_matches">一致する項目はありません</string>
+    <string name="editor_find_status">%1$d / %2$d</string>
+    <string name="editor_find_case_sensitive">大文字/小文字を区別</string>
+    <string name="editor_find_previous">前の一致</string>
+    <string name="editor_find_next">次の一致</string>
+    <string name="editor_find_close">検索を閉じる</string>
+</resources>
