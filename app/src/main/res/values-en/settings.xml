@@ -5,6 +5,16 @@
     <string name="settings_language_summary">Choose the interface language used by SiftAlpha Studio.</string>
     <string name="settings_language_current">Current language: %1$s</string>
     <string name="settings_language_change">Change language</string>
+    <string name="settings_browser_section">Browser</string>
+    <string name="settings_browser_summary">Choose the browser used by Open Browser. Once selected, Studio opens it directly without asking every time.</string>
+    <string name="settings_browser_current">Current browser: %1$s</string>
+    <string name="settings_browser_not_selected">Not selected</string>
+    <string name="settings_browser_change">Choose browser</string>
+    <string name="settings_browser_picker_title">Choose browser</string>
+    <string name="settings_browser_no_browser_title">No browser found</string>
+    <string name="settings_browser_no_browser_message">No installed browser can handle HTTP/HTTPS links on this device.</string>
+    <string name="settings_browser_required_title">Choose a browser first</string>
+    <string name="settings_browser_required_message">Choose a browser in Settings &gt; Browser first. Open Browser will then use it directly without asking again.</string>
     <string name="settings_about_section">About</string>
     <string name="settings_about_summary">A mobile workspace for local projects, runtimes, and automation tasks.</string>
     <string name="settings_version">Version %1$s</string>

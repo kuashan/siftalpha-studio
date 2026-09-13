@@ -8,7 +8,7 @@ Branch: `v0.8.0-uiux-rework`
 
 This slice starts the incremental v0.8 UI migration without changing Runtime, Termux/PRoot execution, process ownership, secret transport, SAF source handling, Web endpoint validation, or cleanup guards.
 
-The candidate version is `0.8.0-alpha2` (`versionCode 78`). The application id remains `com.siftalpha.studio` and the protected trusted-signing path remains conditional and unchanged.
+The current device-acceptance candidate is `0.8.0-alpha3` (`versionCode 79`). It supersedes the earlier alpha2 W1A candidate after the browser-preference and launcher-icon refinements. The application id remains `com.siftalpha.studio`; protected trusted signing is still a separate main-only path and is not claimed by this candidate.
 
 ## Compatibility baseline
 
@@ -26,8 +26,10 @@ The candidate version is `0.8.0-alpha2` (`versionCode 78`). The application id r
 
 - Added an independent `StudioComposeActivity` host so legacy `StudioActivity`, editor, terminal, Runtime, and IME behavior remain untouched.
 - Added Material 3 light/dark semantic color tokens, typography, spacing, status colors, and small reusable card/action/status components.
-- Added a real Settings screen with only two working responsibilities: app language and About/version information.
+- Added a real Settings screen for app language, preferred browser, and About/version information.
 - Moved the single global language-picker entry from Home to Settings while continuing to use the existing `StudioLanguage` persistence and locale behavior.
+- Added a persistent global browser preference. Runtime Center still performs the existing local URL and endpoint-availability checks, then opens the selected browser directly instead of showing a browser chooser on every launch. If the preference is missing or no longer valid, Runtime Center sends the user back to Settings rather than silently choosing another browser.
+- Added the current approved SiftAlpha Studio S/A + terminal-prompt artwork as the launcher icon candidate for this W1A acceptance pass.
 - Expanded the localization source gate to include the Settings host and new `ui/**` Kotlin sources, including direct Compose `Text` and `contentDescription` literals.
 - Added Settings strings for Simplified Chinese, Traditional Chinese, English, Korean, and Japanese.
 
@@ -35,6 +37,8 @@ The candidate version is `0.8.0-alpha2` (`versionCode 78`). The application id r
 
 The new Settings surface follows the light/dark semantic theme. Existing View-based screens remain on the accepted legacy dark theme in this slice. There is intentionally no global theme switch yet, and this work does not claim that legacy screens have been migrated to Material 3.
 
+The browser preference changes only browser dispatch after the existing Runtime web-state and endpoint checks succeed. It does not change project execution, URL extraction, endpoint validation, Runtime state, or process ownership.
+
 ## Validation status
 
-Remote pull-request CI will provide localization, JVM unit, and ordinary debug APK build evidence for this commit. Real-device coverage, Android 13+ locale switching, legacy locale-wrapper switching, 320/360 dp rendering, 200% font scaling, screen-reader behavior, and upgrade-in-place/data-preservation remain `NOT TESTED` until an authorized device is used.
+Remote pull-request CI must re-run for alpha3 before it becomes the new W1A real-device baseline. Real-device coverage, Android 13+ locale switching, legacy locale-wrapper switching, 320/360 dp rendering, 200% font scaling, screen-reader behavior, browser preference behavior, launcher rendering, and upgrade-in-place/data-preservation remain `NOT TESTED` until an authorized device is used.

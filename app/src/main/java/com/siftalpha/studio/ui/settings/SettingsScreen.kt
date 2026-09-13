@@ -30,10 +30,12 @@ import com.siftalpha.studio.ui.theme.StudioThemeTokens
 @Composable
 fun SettingsScreen(
     currentLanguage: String,
+    currentBrowser: String?,
     versionName: String,
     applicationId: String,
     onBack: () -> Unit,
     onChangeLanguage: () -> Unit,
+    onChangeBrowser: () -> Unit,
 ) {
     val spacing = StudioThemeTokens.spacing
     Scaffold(
@@ -82,6 +84,32 @@ fun SettingsScreen(
 
             StudioSectionCard {
                 Text(
+                    text = stringResource(R.string.settings_browser_section),
+                    style = MaterialTheme.typography.titleMedium,
+                )
+                Spacer(modifier = Modifier.height(spacing.small))
+                Text(
+                    text = stringResource(R.string.settings_browser_summary),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(modifier = Modifier.height(spacing.medium))
+                Text(
+                    text = stringResource(
+                        R.string.settings_browser_current,
+                        currentBrowser ?: stringResource(R.string.settings_browser_not_selected),
+                    ),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                Spacer(modifier = Modifier.height(spacing.medium))
+                StudioPrimaryAction(
+                    label = stringResource(R.string.settings_browser_change),
+                    onClick = onChangeBrowser,
+                )
+            }
+
+            StudioSectionCard {
+                Text(
                     text = stringResource(R.string.settings_about_section),
                     style = MaterialTheme.typography.titleMedium,
                 )
@@ -112,10 +140,12 @@ private fun SettingsScreenLightPreview() {
     StudioTheme(darkTheme = false) {
         SettingsScreen(
             currentLanguage = "English",
-            versionName = "0.8.0-alpha2",
+            currentBrowser = "Chrome",
+            versionName = "0.8.0-alpha3",
             applicationId = "com.siftalpha.studio",
             onBack = {},
             onChangeLanguage = {},
+            onChangeBrowser = {},
         )
     }
 }
@@ -126,10 +156,12 @@ private fun SettingsScreenDarkPreview() {
     StudioTheme(darkTheme = true) {
         SettingsScreen(
             currentLanguage = "English",
-            versionName = "0.8.0-alpha2",
+            currentBrowser = null,
+            versionName = "0.8.0-alpha3",
             applicationId = "com.siftalpha.studio",
             onBack = {},
             onChangeLanguage = {},
+            onChangeBrowser = {},
         )
     }
 }
