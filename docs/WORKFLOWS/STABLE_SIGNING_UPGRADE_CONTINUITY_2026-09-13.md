@@ -65,3 +65,16 @@ When an authorized Android device is available, install the trusted artifact wit
 - App data preserved
 
 If no device is connected, or the same `versionCode` prevents a meaningful upgrade test, report the corresponding result as `NOT TESTED`; do not claim upgrade continuity from CI alone.
+
+## 2026-09-13 execution record
+
+- Commit: `c252dd3c0234ddbd865f3a2e20429c5096511135`
+- Trusted run: [34762538278](https://github.com/kuashan/siftalpha-studio/actions/runs/34762538278) — `success`
+- Trusted artifact: `SiftAlpha-Studio-trusted-debug-0.7.0-alpha15-c252dd3`
+- Artifact URL: [download trusted artifact](https://github.com/kuashan/siftalpha-studio/actions/runs/34762538278/artifacts/10319452219)
+- Exact-head/unit run: [34762684074](https://github.com/kuashan/siftalpha-studio/actions/runs/34762684074) — `success`
+- Ordinary Android Debug APK run: [34762531706](https://github.com/kuashan/siftalpha-studio/actions/runs/34762531706) — `success`
+- Localization run: [34762531689](https://github.com/kuashan/siftalpha-studio/actions/runs/34762531689) — `success`
+- Downloaded artifact signer: `1d96e9ce12c06e6ff0571cf8f82cf2461ac3b5261189ad06ab0747ce92f8192e`
+- Downloaded artifact metadata: `com.siftalpha.studio`, `0.7.0-alpha15`, `versionCode 77`
+- Fresh install / upgrade install / app data preserved: `NOT TESTED` because no authorized Android device was connected
