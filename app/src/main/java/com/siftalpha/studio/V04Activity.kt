@@ -1078,20 +1078,25 @@ class V04Activity : StudioActivity() {
         if (runtimeState != RuntimeState.UNKNOWN) {
             typedStates[stateKey] = runtimeState
         }
-        val failureReason = if (!success) {
-            RuntimeFailureReason.summarize(
+        val failureReason = when {
+            !success -> RuntimeFailureReason.summarize(
                 exitCode = result.exitCode,
                 internalErrorMessage = result.internalErrorMessage,
                 stdout = result.stdout,
                 stderr = result.stderr,
             )
-        } else {
-            null
+            runtimeState == RuntimeState.EXITED_ERROR -> RuntimeFailureReason.summarize(
+                exitCode = RuntimeState.extractExitCode(stdout) ?: 1,
+                internalErrorMessage = result.internalErrorMessage,
+                stdout = result.stdout,
+                stderr = result.stderr,
+            )
+            else -> null
         }
         if (failureReason.isNullOrBlank()) {
             failureReasons.remove(stateKey)
         } else {
-            failureReasons[stateKey] = failureReason
+            failureReasons[stateKey] = failureReason!!
         }
         val runtimeUrl = RuntimeWebUrl.extractLocalHttpUrl(stdout)
         runtimeUrl?.let { url ->
