@@ -1,6 +1,8 @@
 name: Exact Head Unit
 
 on:
+  push:
+    branches: [v0.8.0-uiux-rework]
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch:
