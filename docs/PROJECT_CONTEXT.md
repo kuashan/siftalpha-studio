@@ -42,7 +42,10 @@ than silently relying on the old note.
 
 ### Current W2 alpha12 validation status（当前 W2 alpha12 验证状态）
 
-- Code candidate commit（代码候选提交）: b6135d705441b8b3149f4249defe39e6e801a72f.
+- Code candidate commit（代码候选提交）: 00ee9cbe1af5590d4296adf07eaa472bbd4e5a8c.
+- W2 follow-up hardening（W2 后续加固）: `STARTING`/`PREPARING`（启动中/准备中） are persisted before
+  the Termux callback（Termux 回调） arrives, and live preparation-log tails are redacted before
+  they reach the project output panel（项目输出面板）.
 - W2 implementation is complete on the PR branch, but the three public cloud checks（云端检查）
   have not yet run for this candidate: NOT RUN（未运行）.
 - Trusted Signed Debug APK（稳定签名调试包）: NOT PRODUCED（未生成）. The exact fallback comment
