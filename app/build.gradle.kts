@@ -48,6 +48,11 @@ android {
                 signingConfig = signingConfigs.getByName("siftalphaTrustedDebug")
             }
         }
+        getByName("release") {
+            if (trustedSigningEnabled) {
+                signingConfig = signingConfigs.getByName("siftalphaTrustedDebug")
+            }
+        }
     }
 }
 
