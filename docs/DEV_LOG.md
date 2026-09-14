@@ -124,8 +124,14 @@ changes, validation evidence, artifact information, device acceptance, and next 
   `SettingsScreen`; no new unused string or layout path was introduced.
 - Candidate bump: `0.8.0-alpha11`, `versionCode 87`, while keeping application id
   `com.siftalpha.studio` and the stable signing lineage unchanged.
-- Cloud validation: `PENDING` until the three public GitHub Actions checks complete for the new
-  commit.
+- Cloud validation: all three public GitHub Actions checks passed for commit
+  `e5b7dcf198ee2a05dd5b483ea1a9423bdf917d24`:
+  - Android Debug APK: [34815147559](https://github.com/kuashan/siftalpha-studio/actions/runs/34815147559)
+  - Exact Head Unit: [34815147586](https://github.com/kuashan/siftalpha-studio/actions/runs/34815147586)
+  - Localization: [34815147620](https://github.com/kuashan/siftalpha-studio/actions/runs/34815147620)
+- Protected signing: [run 34815293599](https://github.com/kuashan/siftalpha-studio/actions/runs/34815293599)
+  passed. The delivered APK SHA-256 is
+  `d2bad4b7d7b7e8d66c61eb211aa1e49a210d481c6eb2a47d506c173fa5308d03`.
 - Device acceptance: `PENDING`; after the public checks, produce a new Trusted Signed Debug APK
   for real-device testing. Do not merge automatically.
 

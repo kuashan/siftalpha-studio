@@ -40,6 +40,23 @@ than silently relying on the old note.
   configuration wizard（Python 配置检测和顺序配置向导）, with the configuration-button and
   run-as-detection correction, plus the About（关于） tagline update in the alpha11 candidate.
 
+### Latest alpha11 cloud validation（最近一次 alpha11 云端验证）
+
+All three public checks for the alpha11 candidate passed:
+
+- [Android Debug APK run 34815147559](https://github.com/kuashan/siftalpha-studio/actions/runs/34815147559)
+- [Exact Head Unit run 34815147586](https://github.com/kuashan/siftalpha-studio/actions/runs/34815147586)
+- [Localization run 34815147620](https://github.com/kuashan/siftalpha-studio/actions/runs/34815147620)
+
+Code candidate commit（代码候选提交）: `e5b7dcf198ee2a05dd5b483ea1a9423bdf917d24`.
+
+Protected candidate signing（受保护候选签名）:
+[run 34815293599](https://github.com/kuashan/siftalpha-studio/actions/runs/34815293599), `SUCCESS`.
+The direct APK is `0.8.0-alpha11`, `versionCode 87`, with APK SHA-256
+`d2bad4b7d7b7e8d66c61eb211aa1e49a210d481c6eb2a47d506c173fa5308d03`.
+
+Device acceptance（真机验收）: `PENDING`（待验收）.
+
 ### Latest alpha10 cloud validation（最近一次 alpha10 云端验证）
 
 All three checks for the alpha10 code candidate completed successfully:
@@ -155,6 +172,6 @@ runtime payload. Never write them to source files, `.env`, logs, GitHub, or this
 ## Current next action（当前下一步）
 
 The protected candidate-signing workflow is now available on `main`, and the direct `/stable-debug`
-path has been verified successfully for PR #5. The alpha11 public checks are now pending for the
-About tagline update. After they pass, generate the alpha11 Trusted Signed Debug APK（稳定签名调试包）
-for real-device testing. Keep PR #5 Draft and do not merge automatically.
+path has been verified successfully for PR #5. The alpha11 public checks and stable candidate
+generation have passed. The alpha11 Trusted Signed Debug APK（稳定签名调试包）is ready for
+real-device testing. Keep PR #5 Draft and do not merge automatically.
