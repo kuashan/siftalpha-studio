@@ -30,6 +30,8 @@ changes, validation evidence, artifact information, device acceptance, and next 
   process ownership, web URL validation, cleanup rules, and supported runtime scope remain intact.
 - Cloud validation（云端验证）: three public checks for this candidate are NOT RUN（未运行） at
   documentation time. No local Gradle/JDK/Android SDK（本地 Gradle/JDK/Android SDK） was used.
+- Trigger observation（触发观察）: the branch synchronization event is still pending; historical green
+  runs are not accepted as W2 evidence.
 - Trusted Signed Debug APK（稳定签名调试包）: NOT REQUESTED（未请求） until all three checks
   pass on this exact commit.
 - Device acceptance（真机验收）: NOT TESTED（未测试）. Green CI（绿色持续集成） is not device
