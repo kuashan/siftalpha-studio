@@ -11,6 +11,34 @@ Every meaningful entry should include: date, scope, reason or decision, branch/P
 changes, validation evidence, artifact information, device acceptance, and next action. Use
 `PASS`, `FAIL`, `PENDING`, or `NOT TESTED` instead of vague language. Never record secret values.
 
+## 2026-09-14 — W2 Runtime Lifecycle Reliability（运行生命周期可靠性）
+
+- Branch/PR（分支/合并请求）: codex/w1c-config-wizard, PR #5, Draft（草稿）, open and
+  unmerged（开放且未合并）.
+- Candidate（候选版本）: 0.8.0-alpha12, Android versionCode 88, application id（应用标识）
+  com.siftalpha.studio.
+- Code candidate commit（代码候选提交）: W2_COMMIT_PENDING.
+- Scope（范围）: project-scoped lifecycle resolution（项目级生命周期解析）, foreground status
+  recovery（前台状态恢复）, failure-reason persistence（失败原因持久化）, duplicate-start
+  protection（重复启动保护）, runtime-discovery persistence（运行配置发现持久化）, and
+  secret redaction（秘密脱敏）.
+- Changed areas（变更区域）: Runtime Center（运行中心） state/action policy（状态/动作策略）,
+  Android Keystore-backed configuration metadata（Android Keystore 保护配置元数据）, localized
+  lifecycle labels（本地化生命周期文案）, and JVM unit tests（JVM 单元测试）.
+- Safety boundaries（安全边界）: no secret value, password, token, keystore, or signing payload was
+  added to source, logs, or documentation; existing Termux/PRoot protocol（Termux/PRoot 协议）,
+  process ownership, web URL validation, cleanup rules, and supported runtime scope remain intact.
+- Cloud validation（云端验证）: three public checks for this candidate are NOT RUN（未运行） at
+  documentation time. No local Gradle/JDK/Android SDK（本地 Gradle/JDK/Android SDK） was used.
+- Trusted Signed Debug APK（稳定签名调试包）: NOT REQUESTED（未请求） until all three checks
+  pass on this exact commit.
+- Device acceptance（真机验收）: NOT TESTED（未测试）. Green CI（绿色持续集成） is not device
+  acceptance.
+- Next action（下一步）: run Android Debug APK（普通调试 APK）、Exact Head Unit（精确头部单元）、
+  and Localization（本地化） checks on the same final commit; then add the exact /stable-debug
+  PR comment（合并请求评论） if needed, verify the protected APK, and wait for separate device
+  acceptance.
+
 ## 2026-09-14 — Persistent project handoff（持久项目交接）
 
 - Decision（决定）: use the repository as the durable source of truth（唯一可信记录） so a new

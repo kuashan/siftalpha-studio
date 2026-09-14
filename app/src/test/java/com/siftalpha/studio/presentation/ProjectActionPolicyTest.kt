@@ -180,7 +180,7 @@ class ProjectActionPolicyTest {
     }
 
     @Test
-    fun `runtime discovery enables configuration without blocking a retry`() {
+    fun runtimeDiscoveryRequiresConfigurationBeforeRetry() {
         val policy = ProjectActionPolicy.resolve(
             snapshot(
                 lifecycle = RuntimeState.EXITED_ERROR,
@@ -194,9 +194,33 @@ class ProjectActionPolicyTest {
             ),
         )
 
-        assertEquals(ProjectActionPolicy.Action.START, policy.primaryAction)
-        assertTrue(policy.isEnabled(ProjectActionPolicy.Action.START))
+        assertEquals(ProjectActionPolicy.Action.CONFIGURE, policy.primaryAction)
+        assertEquals(ProjectActionPolicy.Action.STATUS, policy.directSecondaryAction)
+        assertFalse(policy.isEnabled(ProjectActionPolicy.Action.START))
         assertTrue(policy.isEnabled(ProjectActionPolicy.Action.CONFIGURE))
+        assertEquals(
+            ProjectActionPolicy.DisableReason.REQUIRED_CONFIGURATION_MISSING,
+            policy.reasonFor(ProjectActionPolicy.Action.START),
+        )
+    }
+
+    @Test
+    fun recoveryBlocksDuplicateRuntimeSideEffects() {
+        val policy = ProjectActionPolicy.resolve(
+            snapshot(
+                lifecycle = RuntimeState.RUNNING,
+                stopCapability = true,
+                recoveryInProgress = true,
+            ),
+        )
+
+        assertEquals(ProjectActionPolicy.MessageKey.RUNTIME_RECOVERING, policy.summary)
+        assertEquals(null, policy.primaryAction)
+        assertFalse(policy.isEnabled(ProjectActionPolicy.Action.START))
+        assertEquals(
+            ProjectActionPolicy.DisableReason.RUNTIME_RECOVERY,
+            policy.reasonFor(ProjectActionPolicy.Action.STATUS),
+        )
     }
 
     @Test
@@ -290,6 +314,7 @@ class ProjectActionPolicyTest {
         ),
         pending: ProjectUiSnapshot.PendingOperation? = null,
         stopCapability: Boolean = runtime.stopCapability,
+        recoveryInProgress: Boolean = false,
         evidence: ProjectUiSnapshot.Evidence = ProjectUiSnapshot.Evidence(
             lifecycle = if (lifecycle == RuntimeState.UNKNOWN) {
                 ProjectUiSnapshot.LifecycleEvidence.NONE
@@ -310,5 +335,6 @@ class ProjectActionPolicyTest {
         web = web,
         pending = pending,
         evidence = evidence,
+        recoveryInProgress = recoveryInProgress,
     )
 }

@@ -2,6 +2,7 @@ package com.siftalpha.studio
 
 import android.app.Activity
 import android.app.AlertDialog
+import android.content.Context
 import android.text.InputType
 import android.widget.EditText
 import android.widget.Toast
@@ -56,6 +57,7 @@ class ProjectConfigurationUiController(
 
     private val runtimeHints = mutableMapOf<String, LinkedHashSet<String>>()
     private val runtimeDiscoveryFolders = mutableSetOf<String>()
+    private val discoveryPrefs = activity.getSharedPreferences(DISCOVERY_PREFS, Context.MODE_PRIVATE)
     private val legacyPolicyInspector = ProjectSecretPolicyInspector(activity.applicationContext)
 
     fun snapshot(projectDocumentId: String, folderName: String): Snapshot {
@@ -68,12 +70,18 @@ class ProjectConfigurationUiController(
         val profile = LegacyProjectConfigurationBridge.augment(inspected, legacyPolicy)
         val protected = runCatching { store.configuredEnvironmentKeys(folderName) }
             .getOrDefault(emptySet())
+        val persistedHints = discoveryPrefs.getStringSet(hintsKey(folderName), emptySet()).orEmpty()
+        if (persistedHints.isNotEmpty()) {
+            runtimeHints.getOrPut(folderName) { linkedSetOf() }.addAll(persistedHints)
+        }
+        val knownHints = runtimeHints[folderName].orEmpty()
         return Snapshot(
             profile = profile,
             protectedKeys = protected,
             preflight = ProjectConfigurationPreflight.evaluate(profile, protected),
-            runtimeHints = runtimeHints[folderName].orEmpty(),
-            runtimeConfigurationDiscovered = folderName in runtimeDiscoveryFolders,
+            runtimeHints = knownHints,
+            runtimeConfigurationDiscovered = folderName in runtimeDiscoveryFolders ||
+                discoveryPrefs.getBoolean(discoveredKey(folderName), false),
         )
     }
 
@@ -99,6 +107,10 @@ class ProjectConfigurationUiController(
     fun clearRuntimeDiscovery(folderName: String) {
         runtimeHints.remove(folderName)
         runtimeDiscoveryFolders.remove(folderName)
+        discoveryPrefs.edit()
+            .remove(discoveredKey(folderName))
+            .remove(hintsKey(folderName))
+            .apply()
     }
 
     fun showConfiguration(
@@ -285,6 +297,7 @@ class ProjectConfigurationUiController(
         projectDocumentId: String,
         folderName: String,
         output: String,
+        presentDialog: Boolean = true,
         onConfigurationCompleted: () -> Unit = {},
     ): Boolean {
         val finding = RuntimeConfigurationDiagnostic.inspect(output)
@@ -295,10 +308,37 @@ class ProjectConfigurationUiController(
         if (finding.missingEnvironmentNames.isNotEmpty()) {
             val hints = runtimeHints.getOrPut(folderName) { linkedSetOf() }
             hints += finding.missingEnvironmentNames
-            val names = finding.missingEnvironmentNames.joinToString("\n") { "• $it" }
+            discoveryPrefs.edit()
+                .putBoolean(discoveredKey(folderName), true)
+                .putStringSet(hintsKey(folderName), hints.toSet())
+                .apply()
+            if (presentDialog) {
+                val names = finding.missingEnvironmentNames.joinToString("\n") { "• $it" }
+                AlertDialog.Builder(activity)
+                    .setTitle(R.string.runtime_configuration_runtime_missing_title)
+                    .setMessage(activity.getString(R.string.runtime_configuration_runtime_missing_message, names))
+                    .setNegativeButton(R.string.common_close, null)
+                    .setPositiveButton(R.string.runtime_configuration_button) { _, _ ->
+                        showConfiguration(
+                            projectName = projectName,
+                            projectDocumentId = projectDocumentId,
+                            folderName = folderName,
+                            onCompleted = onConfigurationCompleted,
+                        )
+                    }
+                    .show()
+            }
+            onChanged()
+            return true
+        }
+
+        discoveryPrefs.edit()
+            .putBoolean(discoveredKey(folderName), true)
+            .apply()
+        if (presentDialog) {
             AlertDialog.Builder(activity)
-                .setTitle(R.string.runtime_configuration_runtime_missing_title)
-                .setMessage(activity.getString(R.string.runtime_configuration_runtime_missing_message, names))
+                .setTitle(R.string.runtime_configuration_runtime_unnamed_title)
+                .setMessage(R.string.runtime_configuration_runtime_unnamed_message)
                 .setNegativeButton(R.string.common_close, null)
                 .setPositiveButton(R.string.runtime_configuration_button) { _, _ ->
                     showConfiguration(
@@ -309,23 +349,7 @@ class ProjectConfigurationUiController(
                     )
                 }
                 .show()
-            onChanged()
-            return true
         }
-
-        AlertDialog.Builder(activity)
-            .setTitle(R.string.runtime_configuration_runtime_unnamed_title)
-            .setMessage(R.string.runtime_configuration_runtime_unnamed_message)
-            .setNegativeButton(R.string.common_close, null)
-            .setPositiveButton(R.string.runtime_configuration_button) { _, _ ->
-                showConfiguration(
-                    projectName = projectName,
-                    projectDocumentId = projectDocumentId,
-                    folderName = folderName,
-                    onCompleted = onConfigurationCompleted,
-                )
-            }
-            .show()
         onChanged()
         return true
     }
@@ -469,4 +493,11 @@ class ProjectConfigurationUiController(
 
     private fun toast(message: String) =
         Toast.makeText(activity, message, Toast.LENGTH_SHORT).show()
+
+    private fun discoveredKey(folderName: String): String = "discovered:$folderName"
+    private fun hintsKey(folderName: String): String = "hints:$folderName"
+
+    companion object {
+        private const val DISCOVERY_PREFS = "siftalpha_runtime_configuration_discovery_v1"
+    }
 }

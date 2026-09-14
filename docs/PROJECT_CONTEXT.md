@@ -29,9 +29,9 @@ than silently relying on the old note.
 
 ## Current candidate（当前候选版本）
 
-- Candidate: `0.8.0-alpha11`
-- Android `versionCode`（版本代码）: `87`
-- Android `versionName`（版本名称）: `0.8.0-alpha11`
+- Candidate: `0.8.0-alpha12`
+- Android `versionCode`（版本代码）: `88`
+- Android `versionName`（版本名称）: `0.8.0-alpha12`
 - Feature branch（功能分支）: `codex/w1c-config-wizard`
 - Active PR: #5, open, Draft（草稿）, unmerged（未合并）
 - Previous alpha9 code candidate tested by cloud CI（云端持续集成）: commit
@@ -39,6 +39,15 @@ than silently relying on the old note.
 - Current feature slice（当前功能切片）: W1C Python configuration detection and sequential
   configuration wizard（Python 配置检测和顺序配置向导）, with the configuration-button and
   run-as-detection correction, plus the About（关于） tagline update in the alpha11 candidate.
+
+### Current W2 alpha12 validation status（当前 W2 alpha12 验证状态）
+
+- Code candidate commit（代码候选提交）: W2_COMMIT_PENDING.
+- W2 implementation is complete on the PR branch, but the three public cloud checks（云端检查）
+  have not yet run for this candidate: NOT RUN（未运行）.
+- Trusted Signed Debug APK（稳定签名调试包）: NOT REQUESTED（未请求） until the same-commit
+  public checks pass.
+- Device acceptance（真机验收）: NOT TESTED（未测试）. CI（持续集成）结果不能代替真机验收.
 
 ### Latest alpha11 cloud validation（最近一次 alpha11 云端验证）
 
@@ -161,6 +170,7 @@ runtime payload. Never write them to source files, `.env`, logs, GitHub, or this
 ## Related records（相关记录）
 
 - [Chronological development log（按时间总开发日志）](DEV_LOG.md)
+- [W2 runtime lifecycle note（W2 运行生命周期记录）](DEV_NOTES/V0_8_W2_RUNTIME_LIFECYCLE_2026-09-14.md)
 - [W1C detailed development note（W1C 详细开发记录）](DEV_NOTES/V0_8_W1C_CONFIGURATION_WIZARD_2026-09-14.md)
 - [Launcher icon repair（启动图标修复）](DEV_NOTES/W1A_ALPHA7_ICON_REPAIR_2026-09-14.md)
 - [UI foundation（界面基础）](DEV_NOTES/V0_8_W1A_UI_FOUNDATION_2026-09-13.md)
@@ -171,7 +181,8 @@ runtime payload. Never write them to source files, `.env`, logs, GitHub, or this
 
 ## Current next action（当前下一步）
 
-The protected candidate-signing workflow is now available on `main`, and the direct `/stable-debug`
-path has been verified successfully for PR #5. The alpha11 public checks and stable candidate
-generation have passed. The alpha11 Trusted Signed Debug APK（稳定签名调试包）is ready for
-real-device testing. Keep PR #5 Draft and do not merge automatically.
+The protected candidate-signing workflow is available on `main`, and the direct `/stable-debug`
+path is the current stable-signing trigger for PR #5. W2 alpha12 implementation is committed to
+`codex/w1c-config-wizard`, but public checks and the protected candidate package are still pending.
+Run the three public checks on the final W2 commit, then request the Trusted Signed Debug APK（稳定
+签名调试包）. Keep PR #5 Draft and do not merge automatically.

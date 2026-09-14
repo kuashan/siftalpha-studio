@@ -2,6 +2,7 @@ package com.siftalpha.studio.presentation
 
 import com.siftalpha.studio.runtime.ProjectRuntimeExecutionPlanner
 import com.siftalpha.studio.runtime.RuntimeKind
+import com.siftalpha.studio.runtime.RuntimeLifecycleState
 import com.siftalpha.studio.runtime.RuntimePresentationState
 import com.siftalpha.studio.runtime.RuntimeState
 import com.siftalpha.studio.runtime.RuntimeWebUiStatus
@@ -23,6 +24,12 @@ data class ProjectUiSnapshot(
     val web: Web,
     val pending: PendingOperation? = null,
     val evidence: Evidence = Evidence(),
+    /** The user-facing lifecycle state resolved from fresh facts and pending work. */
+    val lifecycleState: RuntimeLifecycleState = RuntimeLifecycleState.READY_TO_RUN,
+    /** True while a persisted active state is being reconciled by a real STATUS command. */
+    val recoveryInProgress: Boolean = false,
+    /** Bounded, redacted reason retained after a failed run. */
+    val failureReason: String? = null,
 ) {
 
     /**
@@ -187,6 +194,10 @@ data class ProjectUiSnapshot(
 
         val hasOnlyOptionalCandidates: Boolean
             get() = ready && credentialCandidateCount > 0
+
+        /** Runtime discovery has made the missing values actionable for the next run. */
+        val needsConfiguration: Boolean
+            get() = runtimeConfigurationDiscovered && missingRequiredCount > 0
     }
 
     data class Web(

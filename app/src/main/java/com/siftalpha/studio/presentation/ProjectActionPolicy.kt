@@ -38,6 +38,7 @@ object ProjectActionPolicy {
         RUNTIME_SELECTION_REQUIRED("runtime_policy_runtime_selection_required"),
         RUNTIME_ACTIVE("runtime_policy_runtime_active"),
         WEB_ENDPOINT_PENDING("runtime_policy_web_endpoint_pending"),
+        RUNTIME_RECOVERING("runtime_policy_runtime_recovering"),
         CONFIGURATION_REQUIRED("runtime_policy_configuration_required"),
         ENVIRONMENT_PREPARE_REQUIRED("runtime_policy_environment_prepare_required"),
         ENVIRONMENT_STATUS_REQUIRED("runtime_policy_environment_status_required"),
@@ -47,6 +48,7 @@ object ProjectActionPolicy {
 
     enum class DisableReason(val resourceKey: String) {
         PENDING_OPERATION("runtime_policy_reason_pending_operation"),
+        RUNTIME_RECOVERY("runtime_policy_reason_runtime_recovering"),
         RUNTIME_HOST_UNAVAILABLE("runtime_policy_reason_runtime_host_unavailable"),
         RUNTIME_SELECTION_REQUIRED("runtime_policy_reason_runtime_selection_required"),
         PROCESS_ACTIVE("runtime_policy_reason_process_active"),
@@ -157,6 +159,20 @@ object ProjectActionPolicy {
             )
         }
 
+        if (snapshot.recoveryInProgress) {
+            runtimeActions.forEach { actions[it] = disabled(DisableReason.RUNTIME_RECOVERY) }
+            actions[Action.CONFIGURE] = disabled(DisableReason.RUNTIME_RECOVERY)
+            actions[Action.OPEN_BROWSER] = disabled(DisableReason.RUNTIME_RECOVERY)
+            return result(
+                actions = actions,
+                summary = MessageKey.RUNTIME_RECOVERING,
+                primaryAction = null,
+                directSecondaryAction = null,
+                disableReason = DisableReason.RUNTIME_RECOVERY,
+                detailEntry = DetailEntry.RUNTIME,
+            )
+        }
+
         val selectionReason = when (snapshot.runtime.selection.status) {
             ProjectUiSnapshot.Runtime.SelectionStatus.RESOLVED -> null
             ProjectUiSnapshot.Runtime.SelectionStatus.AMBIGUOUS,
@@ -229,6 +245,14 @@ object ProjectActionPolicy {
                     message = MessageKey.ENVIRONMENT_STATUS_REQUIRED
                     disableReason = DisableReason.ENVIRONMENT_UNKNOWN
                     detailEntry = DetailEntry.ENVIRONMENT
+                }
+                snapshot.configuration.needsConfiguration -> {
+                    actions[Action.START] = disabled(DisableReason.REQUIRED_CONFIGURATION_MISSING)
+                    primaryAction = Action.CONFIGURE
+                    secondaryAction = Action.STATUS
+                    message = MessageKey.CONFIGURATION_REQUIRED
+                    disableReason = DisableReason.REQUIRED_CONFIGURATION_MISSING
+                    detailEntry = DetailEntry.CONFIGURATION
                 }
                 else -> {
                     primaryAction = Action.START

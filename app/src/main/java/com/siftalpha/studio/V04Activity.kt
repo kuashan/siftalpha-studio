@@ -8,6 +8,8 @@ import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.provider.OpenableColumns
 import android.text.InputType
 import android.view.Gravity
@@ -26,6 +28,11 @@ import com.siftalpha.studio.presentation.ProjectUiSnapshot
 import com.siftalpha.studio.runtime.ProjectRuntimeController
 import com.siftalpha.studio.runtime.ProjectSecretStore
 import com.siftalpha.studio.runtime.RuntimeCommand
+import com.siftalpha.studio.runtime.RuntimeFailureReason
+import com.siftalpha.studio.runtime.RuntimeLifecycleOperation
+import com.siftalpha.studio.runtime.RuntimeLifecycleResolver
+import com.siftalpha.studio.runtime.RuntimeLifecycleState
+import com.siftalpha.studio.runtime.RuntimeLifecycleStore
 import com.siftalpha.studio.runtime.RuntimeResult
 import com.siftalpha.studio.runtime.RuntimeState
 import com.siftalpha.studio.runtime.RuntimeWebAvailabilityTracker
@@ -65,6 +72,11 @@ class V04Activity : StudioActivity() {
     private lateinit var webAvailability: RuntimeWebAvailabilityTracker
     private lateinit var projectOutputs: ProjectOutputPanelController
     private lateinit var prepareLiveProgress: PrepareLiveProgressController
+    private lateinit var lifecycleStore: RuntimeLifecycleStore
+    private val recoveryProjects = mutableSetOf<String>()
+    private val failureReasons = mutableMapOf<String, String>()
+    private val recoveryHandler = Handler(Looper.getMainLooper())
+    private var activityStarted = false
     private lateinit var rootState: TextView
     private lateinit var projectList: LinearLayout
     private lateinit var output: TextView
@@ -87,12 +99,24 @@ class V04Activity : StudioActivity() {
             // Never consume such an unmatched result: registerPending() will immediately reconcile it.
             val item = pending.remove(result.executionId) ?: return@runOnUiThread
             TermuxResultBus.consume(result.executionId)
-            if (item.action == ProjectRuntimeController.Action.CLONE_GITHUB) {
-                renderResult(result)
+            val safeResult = if (::secretStore.isInitialized) {
+                result.copy(
+                    stdout = secretStore.redactRuntimeText(item.folderName, result.stdout),
+                    stderr = secretStore.redactRuntimeText(item.folderName, result.stderr),
+                    internalErrorMessage = secretStore.redactRuntimeText(
+                        item.folderName,
+                        result.internalErrorMessage,
+                    ),
+                )
             } else {
-                renderProjectResult(item.folderName, result)
+                result
             }
-            handleResult(item, result)
+            if (item.action == ProjectRuntimeController.Action.CLONE_GITHUB) {
+                renderResult(safeResult)
+            } else {
+                renderProjectResult(item.folderName, safeResult)
+            }
+            handleResult(item, safeResult)
         }
     }
 
@@ -103,6 +127,7 @@ class V04Activity : StudioActivity() {
         gateway = V04ProjectGateway(this)
         runtime = ProjectRuntimeController(gateway)
         secretStore = ProjectSecretStore(this)
+        lifecycleStore = RuntimeLifecycleStore(this)
         secretPolicyInspector = ProjectSecretPolicyInspector(this)
         configurationInspector = ProjectConfigurationInspector(this)
         webInspector = WebProjectInspector(this)
@@ -138,12 +163,14 @@ class V04Activity : StudioActivity() {
 
     override fun onStart() {
         super.onStart()
+        activityStarted = true
         if (::webAvailability.isInitialized) webAvailability.resume()
         TermuxResultBus.addListener(resultListener)
         if (::prepareLiveProgress.isInitialized) prepareLiveProgress.resume()
         pending.keys.toList().forEach { id ->
             TermuxResultBus.consume(id)?.let(resultListener)
         }
+        recoverPersistedRuntimeStates()
     }
 
     override fun onResume() {
@@ -152,6 +179,8 @@ class V04Activity : StudioActivity() {
     }
 
     override fun onStop() {
+        activityStarted = false
+        recoveryHandler.removeCallbacksAndMessages(null)
         if (::webAvailability.isInitialized) webAvailability.pause()
         if (::prepareLiveProgress.isInitialized) prepareLiveProgress.pause()
         TermuxResultBus.removeListener(resultListener)
@@ -270,6 +299,7 @@ class V04Activity : StudioActivity() {
         val webProfile = runCatching { webInspector.inspect(summary.documentId) }
             .getOrElse { WebProjectInspector.Profile(false, null, "none", null, null) }
         val stateKey = summary.documentId
+        restoreStoredState(stateKey)
         val webSnapshot = webStateStore.snapshot(stateKey)
         val typedState = typedStates[stateKey] ?: RuntimeState.UNKNOWN
         val configuredWebUrl = webProfile.configuredLocalUrl()
@@ -303,6 +333,21 @@ class V04Activity : StudioActivity() {
             item.documentId == summary.documentId ||
                 (item.documentId == null && item.folderName == project.folderName)
         }
+        val configurationRequired = configurationSnapshot.runtimeConfigurationDiscovered &&
+            configurationSnapshot.preflight.missingRequired.isNotEmpty()
+        val lifecycleState = RuntimeLifecycleResolver.resolve(
+            environmentReady = environmentStates[stateKey],
+            runtimeState = typedState,
+            operation = pendingItem?.action?.toLifecycleOperation()
+                ?: RuntimeLifecycleOperation.NONE,
+            configurationRequired = configurationRequired,
+            processActive = typedState in setOf(
+                RuntimeState.PREPARING,
+                RuntimeState.STARTING,
+                RuntimeState.RUNNING,
+            ),
+            recoveryInProgress = recoveryProjects.contains(stateKey),
+        )
         val snapshot = ProjectUiSnapshot(
             identity = ProjectUiSnapshot.Identity(
                 documentId = summary.documentId,
@@ -354,6 +399,9 @@ class V04Activity : StudioActivity() {
                     }
                 },
             ),
+            lifecycleState = lifecycleState,
+            recoveryInProgress = recoveryProjects.contains(stateKey),
+            failureReason = failureReasons[stateKey],
         )
         val policy = ProjectActionPolicy.resolve(snapshot)
         val presentationState = snapshot.displayedLifecycle
@@ -411,19 +459,30 @@ class V04Activity : StudioActivity() {
         })
 
         val stateLabel = when {
+            snapshot.recoveryInProgress -> snapshot.lifecycleState.uiLabel(this)
+            snapshot.lifecycleState == RuntimeLifecycleState.RUN_FAILED &&
+                snapshot.failureReason != null -> snapshot.lifecycleState.uiLabel(this)
             presentationState != typedState -> presentationState.uiLabel(this)
-            else -> states[stateKey]
-                ?: typedState.takeIf { it != RuntimeState.UNKNOWN }?.uiLabel(this)
-                ?: if (environmentStates[stateKey] != null) {
-                    getString(R.string.runtime_state_not_running)
-                } else {
-                    getString(R.string.runtime_state_not_checked)
-                }
+            states[stateKey] != null && snapshot.lifecycleState == RuntimeLifecycleState.DETECTING ->
+                states.getValue(stateKey)
+            else -> snapshot.lifecycleState.uiLabel(this)
         }
         box.addView(text(getString(R.string.runtime_center_state, stateLabel), 12f, false).apply {
-            setTextColor(Color.rgb(170, 224, 190))
+            setTextColor(
+                if (snapshot.lifecycleState == RuntimeLifecycleState.RUN_FAILED) {
+                    Color.rgb(240, 184, 120)
+                } else {
+                    Color.rgb(170, 224, 190)
+                },
+            )
             setPadding(0, dp(2), 0, 0)
         })
+        failureReasons[stateKey]?.let { reason ->
+            box.addView(text(getString(R.string.runtime_failure_reason, reason), 12f, false).apply {
+                setTextColor(Color.rgb(240, 184, 120))
+                setPadding(0, dp(2), 0, dp(2))
+            })
+        }
         box.addView(text(webProfileLabel(webUiStatus), 12f, false).apply {
             setTextColor(
                 if (webProfile.enabled || !webSnapshot.url.isNullOrBlank()) {
@@ -547,6 +606,7 @@ class V04Activity : StudioActivity() {
                 R.string.runtime_policy_runtime_selection_required
             ProjectActionPolicy.MessageKey.RUNTIME_ACTIVE -> R.string.runtime_policy_runtime_active
             ProjectActionPolicy.MessageKey.WEB_ENDPOINT_PENDING -> R.string.runtime_policy_web_endpoint_pending
+            ProjectActionPolicy.MessageKey.RUNTIME_RECOVERING -> R.string.runtime_policy_runtime_recovering
             ProjectActionPolicy.MessageKey.CONFIGURATION_REQUIRED ->
                 R.string.runtime_policy_configuration_required
             ProjectActionPolicy.MessageKey.ENVIRONMENT_PREPARE_REQUIRED ->
@@ -563,6 +623,8 @@ class V04Activity : StudioActivity() {
         when (this) {
             ProjectActionPolicy.DisableReason.PENDING_OPERATION ->
                 R.string.runtime_policy_reason_pending_operation
+            ProjectActionPolicy.DisableReason.RUNTIME_RECOVERY ->
+                R.string.runtime_policy_reason_runtime_recovering
             ProjectActionPolicy.DisableReason.RUNTIME_HOST_UNAVAILABLE ->
                 R.string.runtime_policy_reason_runtime_host_unavailable
             ProjectActionPolicy.DisableReason.RUNTIME_SELECTION_REQUIRED ->
@@ -586,6 +648,107 @@ class V04Activity : StudioActivity() {
         },
     )
 
+    private fun restoreStoredState(stateKey: String) {
+        if (!::lifecycleStore.isInitialized) return
+        val cached = lifecycleStore.read(stateKey)
+        if (!environmentStates.containsKey(stateKey)) {
+            cached.environmentReady?.let { environmentStates[stateKey] = it }
+        }
+        if (!typedStates.containsKey(stateKey) && cached.runtimeState != RuntimeState.UNKNOWN) {
+            typedStates[stateKey] = cached.runtimeState
+        }
+        if (!failureReasons.containsKey(stateKey)) {
+            cached.failureReason?.let { failureReasons[stateKey] = it }
+        }
+        if (!activityStarted && cached.runtimeState in ACTIVE_RUNTIME_STATES) {
+            recoveryProjects += stateKey
+        }
+    }
+
+    private fun recoverPersistedRuntimeStates() {
+        if (!activityStarted || !::lifecycleStore.isInitialized) return
+        val projects = runCatching { gateway.projects() }.getOrElse { return }
+        if (!runtime.runtimeSupported()) {
+            projects.forEach { project ->
+                val key = project.summary.documentId
+                if (lifecycleStore.read(key).runtimeState in ACTIVE_RUNTIME_STATES) {
+                    recoveryProjects.remove(key)
+                    typedStates[key] = RuntimeState.UNKNOWN
+                }
+            }
+            refresh()
+            return
+        }
+        projects.forEach { project ->
+            val key = project.summary.documentId
+            restoreStoredState(key)
+            val cached = lifecycleStore.read(key)
+            if (cached.runtimeState in ACTIVE_RUNTIME_STATES) {
+                recoveryProjects += key
+                if (pending.values.none { item ->
+                        item.documentId == key ||
+                            (item.documentId == null && item.folderName == project.folderName)
+                    }) {
+                    dispatch(
+                        project = project,
+                        action = ProjectRuntimeController.Action.STATUS,
+                        silentRecovery = true,
+                    )
+                }
+            }
+        }
+        refresh()
+    }
+
+    private fun persistRuntimeState(stateKey: String) {
+        if (!::lifecycleStore.isInitialized) return
+        lifecycleStore.write(
+            projectKey = stateKey,
+            environmentReady = environmentStates[stateKey],
+            runtimeState = typedStates[stateKey] ?: RuntimeState.UNKNOWN,
+            failureReason = failureReasons[stateKey],
+        )
+    }
+
+    private fun canDispatch(
+        project: V04ProjectGateway.RuntimeProject,
+        action: ProjectRuntimeController.Action,
+    ): Boolean {
+        val stateKey = project.summary.documentId
+        if (pending.values.any { item ->
+                item.documentId == stateKey ||
+                    (item.documentId == null && item.folderName == project.folderName)
+            }) {
+            return false
+        }
+        if (recoveryProjects.contains(stateKey) && action != ProjectRuntimeController.Action.STATUS) {
+            return false
+        }
+        val currentState = typedStates[stateKey] ?: RuntimeState.UNKNOWN
+        if (action == ProjectRuntimeController.Action.START) {
+            if (environmentStates[stateKey] != true) return false
+            if (currentState in ACTIVE_RUNTIME_STATES) return false
+            val configuration = configurationUi.snapshot(stateKey, project.folderName)
+            if (configuration.runtimeConfigurationDiscovered &&
+                configuration.preflight.missingRequired.isNotEmpty()
+            ) {
+                refresh()
+                return false
+            }
+        }
+        if (action == ProjectRuntimeController.Action.PREPARE &&
+            currentState in ACTIVE_RUNTIME_STATES
+        ) {
+            return false
+        }
+        if (action == ProjectRuntimeController.Action.STOP &&
+            currentState !in ACTIVE_RUNTIME_STATES
+        ) {
+            return false
+        }
+        return true
+    }
+
     private fun ProjectRuntimeController.Action.toUiOperation(): ProjectUiSnapshot.Operation? = when (this) {
         ProjectRuntimeController.Action.PREPARE -> ProjectUiSnapshot.Operation.PREPARE
         ProjectRuntimeController.Action.START -> ProjectUiSnapshot.Operation.START
@@ -594,6 +757,16 @@ class V04Activity : StudioActivity() {
         ProjectRuntimeController.Action.LOGS -> ProjectUiSnapshot.Operation.LOGS
         ProjectRuntimeController.Action.CLEAN -> ProjectUiSnapshot.Operation.CLEAN
         ProjectRuntimeController.Action.CLONE_GITHUB -> null
+    }
+
+    private fun ProjectRuntimeController.Action.toLifecycleOperation(): RuntimeLifecycleOperation = when (this) {
+        ProjectRuntimeController.Action.PREPARE -> RuntimeLifecycleOperation.PREPARE
+        ProjectRuntimeController.Action.START -> RuntimeLifecycleOperation.START
+        ProjectRuntimeController.Action.STOP -> RuntimeLifecycleOperation.STOP
+        ProjectRuntimeController.Action.STATUS -> RuntimeLifecycleOperation.STATUS
+        ProjectRuntimeController.Action.LOGS -> RuntimeLifecycleOperation.LOGS
+        ProjectRuntimeController.Action.CLEAN -> RuntimeLifecycleOperation.CLEAN
+        ProjectRuntimeController.Action.CLONE_GITHUB -> RuntimeLifecycleOperation.NONE
     }
 
     private fun openEditor(project: V04ProjectGateway.RuntimeProject) {
@@ -742,17 +915,15 @@ class V04Activity : StudioActivity() {
         openBrowserAfterLogs: Boolean = false,
         browserConfiguredUrl: String? = null,
         browserFramework: String? = null,
+        silentRecovery: Boolean = false,
     ) {
         if (!ensureRuntime()) return
+        val stateKey = project.summary.documentId
         // The card is rebuilt after every state transition, but an old dialog or click callback can
         // still arrive after that rebuild. Re-check the stable project identity at the side-effect
         // boundary so one project cannot acquire two mutable Runtime operations.
-        if (pending.values.any { item ->
-                item.documentId == project.summary.documentId ||
-                    (item.documentId == null && item.folderName == project.folderName)
-            }) {
-            return
-        }
+        if (!canDispatch(project, action)) return
+        if (silentRecovery) recoveryProjects += stateKey
         val command = try {
             when (action) {
                 ProjectRuntimeController.Action.PREPARE -> runtime.prepare(project)
@@ -770,7 +941,17 @@ class V04Activity : StudioActivity() {
             )
             return
         }
-        val id = send(command, renderToSystemOutput = false) ?: return
+        val id = send(command, renderToSystemOutput = false)
+        if (id == null) {
+            if (silentRecovery) {
+                recoveryProjects.remove(stateKey)
+                typedStates[stateKey] = RuntimeState.UNKNOWN
+                failureReasons[stateKey] = getString(R.string.runtime_detection_failed)
+                persistRuntimeState(stateKey)
+                refresh()
+            }
+            return
+        }
         if (
             ::webAvailability.isInitialized &&
             (action == ProjectRuntimeController.Action.START ||
@@ -779,11 +960,13 @@ class V04Activity : StudioActivity() {
         ) {
             webAvailability.invalidate(project.summary.documentId)
         }
-        projectOutputs.write(
-            project.folderName,
-            getString(R.string.runtime_command_sent, id),
-            expand = true,
-        )
+        if (!silentRecovery) {
+            projectOutputs.write(
+                project.folderName,
+                getString(R.string.runtime_command_sent, id),
+                expand = true,
+            )
+        }
         if (action == ProjectRuntimeController.Action.PREPARE && ::prepareLiveProgress.isInitialized) {
             prepareLiveProgress.start(project.folderName, id)
         }
@@ -795,8 +978,9 @@ class V04Activity : StudioActivity() {
             browserConfiguredUrl = browserConfiguredUrl,
             browserFramework = browserFramework,
         )
-        val stateKey = project.summary.documentId
-        states[stateKey] = when (action) {
+        states[stateKey] = if (silentRecovery) {
+            getString(R.string.runtime_lifecycle_recovering)
+        } else when (action) {
             ProjectRuntimeController.Action.PREPARE -> getString(R.string.runtime_action_preparing)
             ProjectRuntimeController.Action.START -> getString(R.string.runtime_action_starting)
             ProjectRuntimeController.Action.STOP -> getString(R.string.runtime_action_stopping)
@@ -832,7 +1016,11 @@ class V04Activity : StudioActivity() {
         return environmentStates[stateKey]
     }
 
-    private fun showRuntimeConfigurationFinding(item: Pending, result: RuntimeResult): Boolean {
+    private fun showRuntimeConfigurationFinding(
+        item: Pending,
+        result: RuntimeResult,
+        presentDialog: Boolean = true,
+    ): Boolean {
         if (!::configurationUi.isInitialized) return false
         val project = runCatching {
             gateway.projects().firstOrNull {
@@ -852,6 +1040,7 @@ class V04Activity : StudioActivity() {
             projectDocumentId = project.summary.documentId,
             folderName = project.folderName,
             output = text,
+            presentDialog = presentDialog,
             onConfigurationCompleted = { retryProjectAfterConfiguration(project) },
         )
     }
@@ -889,6 +1078,21 @@ class V04Activity : StudioActivity() {
         if (runtimeState != RuntimeState.UNKNOWN) {
             typedStates[stateKey] = runtimeState
         }
+        val failureReason = if (!success) {
+            RuntimeFailureReason.summarize(
+                exitCode = result.exitCode,
+                internalErrorMessage = result.internalErrorMessage,
+                stdout = result.stdout,
+                stderr = result.stderr,
+            )
+        } else {
+            null
+        }
+        if (failureReason.isNullOrBlank()) {
+            failureReasons.remove(stateKey)
+        } else {
+            failureReasons[stateKey] = failureReason
+        }
         val runtimeUrl = RuntimeWebUrl.extractLocalHttpUrl(stdout)
         runtimeUrl?.let { url ->
             webStateStore.rememberUrl(item.documentId ?: item.folderName, url, item.browserFramework)
@@ -923,6 +1127,9 @@ class V04Activity : StudioActivity() {
                 if (!success) runtimeError(result)
             }
             ProjectRuntimeController.Action.START -> {
+                if (!success && runtimeState == RuntimeState.UNKNOWN) {
+                    typedStates[stateKey] = RuntimeState.EXITED_ERROR
+                }
                 states[stateKey] = when (runtimeState) {
                     RuntimeState.RUNNING,
                     RuntimeState.EXITED_SUCCESS,
@@ -986,15 +1193,31 @@ class V04Activity : StudioActivity() {
                 if (!success) runtimeError(result)
             }
             ProjectRuntimeController.Action.STATUS -> {
-                states[stateKey] = if (runtimeState != RuntimeState.UNKNOWN) {
-                    runtimeState.uiLabel(this)
+                val recovering = recoveryProjects.contains(stateKey)
+                if (recovering) {
+                    showRuntimeConfigurationFinding(
+                        item = item,
+                        result = result,
+                        presentDialog = false,
+                    )
+                    recoveryProjects.remove(stateKey)
+                }
+                if (runtimeState != RuntimeState.UNKNOWN) {
+                    typedStates[stateKey] = runtimeState
                 } else if (success) {
-                    getString(R.string.runtime_state_not_running)
+                    typedStates[stateKey] = RuntimeState.STOPPED_BY_USER
                 } else {
-                    getString(R.string.runtime_detection_failed)
+                    typedStates[stateKey] = RuntimeState.ENVIRONMENT_ERROR
+                }
+                states[stateKey] = when {
+                    recovering && typedStates[stateKey] == RuntimeState.RUNNING ->
+                        getString(R.string.runtime_lifecycle_running)
+                    runtimeState != RuntimeState.UNKNOWN -> runtimeState.uiLabel(this)
+                    success -> getString(R.string.runtime_lifecycle_stopped)
+                    else -> getString(R.string.runtime_lifecycle_run_failed)
                 }
                 refresh()
-                if (!success) runtimeError(result)
+                if (!success && !recovering) runtimeError(result)
             }
             ProjectRuntimeController.Action.LOGS -> {
                 if (runtimeState != RuntimeState.UNKNOWN) {
@@ -1027,6 +1250,7 @@ class V04Activity : StudioActivity() {
                 if (!success) runtimeError(result)
             }
         }
+        persistRuntimeState(stateKey)
     }
 
     private fun openBrowserForProject(
@@ -1633,6 +1857,11 @@ class V04Activity : StudioActivity() {
         private val RUNTIME_STATES = mutableMapOf<String, String>()
         private val RUNTIME_TYPED_STATES = mutableMapOf<String, RuntimeState>()
         private val RUNTIME_ENVIRONMENT_READY = mutableMapOf<String, Boolean>()
+        private val ACTIVE_RUNTIME_STATES = setOf(
+            RuntimeState.PREPARING,
+            RuntimeState.STARTING,
+            RuntimeState.RUNNING,
+        )
         private var RUNTIME_STATES_LANGUAGE_TAG: String? = null
     }
 }

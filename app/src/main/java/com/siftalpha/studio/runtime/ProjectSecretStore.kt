@@ -130,6 +130,26 @@ class ProjectSecretStore(context: Context) {
         return RuntimeSecretPayload.buildEnvironment(environment)
     }
 
+    /**
+     * Removes configured secret values from UI/log text before it is rendered or persisted.
+     * Values are decrypted only in memory for this operation and never returned to the caller.
+     */
+    fun redactRuntimeText(projectFolderName: String, text: String): String {
+        if (text.isBlank()) return text
+        val values = mutableListOf<String>()
+        configuredEnvironmentKeys(projectFolderName).forEach { name ->
+            read(projectFolderName, envField(name))
+                ?.takeIf { it.isNotBlank() }
+                ?.let { values += it }
+        }
+        read(projectFolderName, FIELD_API_KEY)?.takeIf { it.isNotBlank() }?.let { values += it }
+        read(projectFolderName, FIELD_API_SECRET)?.takeIf { it.isNotBlank() }?.let { values += it }
+        val sortedValues = values.distinct().sortedByDescending { it.length }
+        return sortedValues.fold(text) { safe, value ->
+            safe.replace(value, "[REDACTED]")
+        }
+    }
+
     private fun read(projectFolderName: String, field: String): String? {
         val packed = prefs.getString(prefKey(projectFolderName, field), null) ?: return null
         return try {
