@@ -116,6 +116,19 @@ changes, validation evidence, artifact information, device acceptance, and next 
   the stable-signed alpha10 candidate for the user's real-device acceptance before deciding whether
   to merge.
 
+## 2026-09-14 — About tagline update（关于页面文案更新）
+
+- Branch/PR: `codex/w1c-config-wizard`, PR #5, Draft and unmerged.
+- User request: add `这个世界很美。` to the existing About（关于） software-introduction text.
+- Implementation: updated the existing `settings_about_summary` resource that is rendered by
+  `SettingsScreen`; no new unused string or layout path was introduced.
+- Candidate bump: `0.8.0-alpha11`, `versionCode 87`, while keeping application id
+  `com.siftalpha.studio` and the stable signing lineage unchanged.
+- Cloud validation: `PENDING` until the three public GitHub Actions checks complete for the new
+  commit.
+- Device acceptance: `PENDING`; after the public checks, produce a new Trusted Signed Debug APK
+  for real-device testing. Do not merge automatically.
+
 ## 2026-09-14 — Direct stable candidate generation verified（直接生成稳定候选包已验证）
 
 - Scope: remove the need for the user to manually start a privileged GitHub Actions workflow while

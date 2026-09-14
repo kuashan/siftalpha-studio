@@ -29,15 +29,16 @@ than silently relying on the old note.
 
 ## Current candidate（当前候选版本）
 
-- Candidate: `0.8.0-alpha10`
-- Android `versionCode`（版本代码）: `86`
+- Candidate: `0.8.0-alpha11`
+- Android `versionCode`（版本代码）: `87`
+- Android `versionName`（版本名称）: `0.8.0-alpha11`
 - Feature branch（功能分支）: `codex/w1c-config-wizard`
 - Active PR: #5, open, Draft（草稿）, unmerged（未合并）
 - Previous alpha9 code candidate tested by cloud CI（云端持续集成）: commit
   `8615c68204633e0912cfac432e564ad59c1dfa31`
 - Current feature slice（当前功能切片）: W1C Python configuration detection and sequential
   configuration wizard（Python 配置检测和顺序配置向导）, with the configuration-button and
-  run-as-detection correction in the alpha10 candidate.
+  run-as-detection correction, plus the About（关于） tagline update in the alpha11 candidate.
 
 ### Latest alpha10 cloud validation（最近一次 alpha10 云端验证）
 
@@ -154,8 +155,6 @@ runtime payload. Never write them to source files, `.env`, logs, GitHub, or this
 ## Current next action（当前下一步）
 
 The protected candidate-signing workflow is now available on `main`, and the direct `/stable-debug`
-path has been verified successfully for PR #5. The stable-signed alpha10 candidate is ready for
-real-device installation and W1C acceptance. The alpha10 ordinary Debug APK remains a historical
-non-upgradeable test artifact. After the first stable-signed package is installed (with a one-time
-uninstall if Android reports a signer mismatch), record the user's configuration-flow result in
-`docs/DEV_LOG.md`; then continue the next feature slice or prepare the accepted batch for merge.
+path has been verified successfully for PR #5. The alpha11 public checks are now pending for the
+About tagline update. After they pass, generate the alpha11 Trusted Signed Debug APK（稳定签名调试包）
+for real-device testing. Keep PR #5 Draft and do not merge automatically.
