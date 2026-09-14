@@ -4,9 +4,6 @@ import android.app.Activity
 import android.app.AlertDialog
 import android.text.InputType
 import android.widget.EditText
-import android.widget.LinearLayout
-import android.widget.ScrollView
-import android.widget.TextView
 import android.widget.Toast
 import com.siftalpha.studio.project.LegacyProjectConfigurationBridge
 import com.siftalpha.studio.project.ProjectConfigurationInspector
@@ -38,7 +35,11 @@ class ProjectConfigurationUiController(
         val runtimeHints: Set<String>,
     ) {
         val allCandidateNames: List<String>
-            get() = (profile.credentialCandidates + runtimeHints)
+            get() = (
+                profile.credentialCandidates +
+                    profile.configurationCandidates.map { it.name } +
+                    runtimeHints
+            )
                 .filterNot { it in profile.declaredNames }
                 .distinct()
                 .sorted()
@@ -107,6 +108,32 @@ class ProjectConfigurationUiController(
             return
         }
 
+        val pendingItems = items.filterNot { isConfigured(snapshot, it.name) }
+        if (pendingItems.isNotEmpty()) {
+            showConfigurationWizard(
+                projectName = projectName,
+                folderName = folderName,
+                items = pendingItems,
+            )
+            return
+        }
+
+        showConfigurationList(
+            projectName = projectName,
+            projectDocumentId = projectDocumentId,
+            folderName = folderName,
+            snapshot = snapshot,
+            items = items,
+        )
+    }
+
+    private fun showConfigurationList(
+        projectName: String,
+        projectDocumentId: String,
+        folderName: String,
+        snapshot: Snapshot,
+        items: List<DisplayItem>,
+    ) {
         val labels = items.map { item ->
             val state = stateLabel(snapshot, item.name, item.required)
             val requirement = if (item.required) {
@@ -142,6 +169,87 @@ class ProjectConfigurationUiController(
             .show()
     }
 
+    private fun showConfigurationWizard(
+        projectName: String,
+        folderName: String,
+        items: List<DisplayItem>,
+        index: Int = 0,
+        onCompleted: () -> Unit = {},
+    ) {
+        if (index >= items.size) {
+            onChanged()
+            onCompleted()
+            toast(activity.getString(R.string.runtime_configuration_completed))
+            return
+        }
+
+        val item = items[index]
+        val input = EditText(activity).apply {
+            hint = activity.getString(R.string.runtime_configuration_value_hint, item.name)
+            setSingleLine(true)
+            inputType = InputType.TYPE_CLASS_TEXT or if (item.secret) {
+                InputType.TYPE_TEXT_VARIATION_PASSWORD
+            } else {
+                InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
+            }
+        }
+        val description = buildString {
+            if (item.description.isNotBlank()) append(item.description)
+            if (item.required) {
+                if (isNotEmpty()) append("\n\n")
+                append(activity.getString(R.string.runtime_configuration_required_section))
+            } else {
+                if (isNotEmpty()) append("\n\n")
+                append(activity.getString(R.string.runtime_configuration_wizard_optional))
+            }
+        }
+        val builder = AlertDialog.Builder(activity)
+            .setTitle(
+                activity.getString(
+                    R.string.runtime_configuration_step_title,
+                    projectName,
+                    index + 1,
+                    items.size,
+                ),
+            )
+            .setMessage(description)
+            .setView(input)
+            .setPositiveButton(R.string.runtime_configuration_save_and_next, null)
+            .setNegativeButton(
+                if (item.required) R.string.common_cancel else R.string.runtime_configuration_skip,
+                null,
+            )
+        val dialog = builder.create()
+
+        dialog.setOnShowListener {
+            if (!item.required) {
+                dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setOnClickListener {
+                    dialog.dismiss()
+                    showConfigurationWizard(projectName, folderName, items, index + 1, onCompleted)
+                }
+            }
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                val value = input.text.toString()
+                if (value.isBlank()) {
+                    toast(activity.getString(R.string.runtime_configuration_blank_value, item.name))
+                    return@setOnClickListener
+                }
+                runCatching { store.saveEnvironmentValue(folderName, item.name, value) }
+                    .onSuccess {
+                        dialog.dismiss()
+                        showConfigurationWizard(projectName, folderName, items, index + 1, onCompleted)
+                    }
+                    .onFailure {
+                        errorDialog(
+                            activity.getString(R.string.runtime_configuration_save_failed),
+                            it.message ?: it.javaClass.simpleName,
+                        )
+                    }
+            }
+        }
+        dialog.show()
+    }
+
     /**
      * Returns true when launch may continue immediately. If false, a blocking configuration dialog
      * is already shown. Saving that dialog invokes [onSavedAndRun] directly.
@@ -155,12 +263,28 @@ class ProjectConfigurationUiController(
         val current = snapshot(projectDocumentId, folderName)
         if (current.preflight.ready) return true
 
-        showPreflightDialog(
+        showConfigurationWizard(
             projectName = projectName,
-            projectDocumentId = projectDocumentId,
             folderName = folderName,
-            missing = current.preflight.missingRequired,
-            onSavedAndRun = onSavedAndRun,
+            items = current.preflight.missingRequired.map { requirement ->
+                DisplayItem(
+                    name = requirement.name,
+                    secret = requirement.secret,
+                    required = true,
+                    description = requirement.description,
+                )
+            },
+            onCompleted = {
+                val verified = snapshot(projectDocumentId, folderName)
+                if (verified.preflight.ready) {
+                    onSavedAndRun()
+                } else {
+                    errorDialog(
+                        activity.getString(R.string.runtime_preflight_save_failed),
+                        verified.preflight.missingRequired.joinToString(", ") { it.name },
+                    )
+                }
+            },
         )
         return false
     }
@@ -203,25 +327,36 @@ class ProjectConfigurationUiController(
     }
 
     private fun buildItems(snapshot: Snapshot): List<DisplayItem> {
-        val result = mutableListOf<DisplayItem>()
+        val result = linkedMapOf<String, DisplayItem>()
         snapshot.profile.requirements.forEach { requirement ->
-            result += DisplayItem(
+            result.putIfAbsent(requirement.name, DisplayItem(
                 name = requirement.name,
                 secret = requirement.secret,
                 required = requirement.required,
                 description = requirement.description,
-            )
+            ))
+        }
+        snapshot.profile.configurationCandidates.forEach { requirement ->
+            result.putIfAbsent(requirement.name, DisplayItem(
+                name = requirement.name,
+                secret = requirement.secret,
+                required = requirement.required,
+                description = requirement.description,
+            ))
         }
         snapshot.allCandidateNames.forEach { name ->
-            result += DisplayItem(
+            result.putIfAbsent(name, DisplayItem(
                 name = name,
                 secret = true,
                 required = false,
                 description = "",
-            )
+            ))
         }
-        return result
+        return result.values.toList()
     }
+
+    private fun isConfigured(snapshot: Snapshot, name: String): Boolean =
+        name in snapshot.protectedKeys || name in snapshot.profile.configuredProjectEnvKeys
 
     private fun stateLabel(snapshot: Snapshot, name: String, required: Boolean): String = when {
         name in snapshot.protectedKeys ->
@@ -306,108 +441,6 @@ class ProjectConfigurationUiController(
         dialog.show()
     }
 
-    private fun showPreflightDialog(
-        projectName: String,
-        projectDocumentId: String,
-        folderName: String,
-        missing: List<ProjectConfigurationInspector.Requirement>,
-        onSavedAndRun: () -> Unit,
-    ) {
-        val fields = linkedMapOf<ProjectConfigurationInspector.Requirement, EditText>()
-        val content = LinearLayout(activity).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(18), dp(6), dp(18), dp(6))
-            addView(TextView(activity).apply {
-                text = activity.getString(R.string.runtime_preflight_message)
-                textSize = 14f
-                setPadding(0, 0, 0, dp(8))
-            })
-            missing.forEach { requirement ->
-                addView(TextView(activity).apply {
-                    text = buildString {
-                        append(requirement.name)
-                        if (requirement.description.isNotBlank()) {
-                            append("\n")
-                            append(requirement.description)
-                        }
-                    }
-                    textSize = 13f
-                    setPadding(0, dp(7), 0, dp(2))
-                })
-                val input = EditText(activity).apply {
-                    hint = activity.getString(
-                        R.string.runtime_configuration_value_hint,
-                        requirement.name,
-                    )
-                    setSingleLine(true)
-                    inputType = InputType.TYPE_CLASS_TEXT or if (requirement.secret) {
-                        InputType.TYPE_TEXT_VARIATION_PASSWORD
-                    } else {
-                        InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
-                    }
-                }
-                fields[requirement] = input
-                addView(input)
-            }
-            addView(TextView(activity).apply {
-                text = activity.getString(R.string.runtime_preflight_project_env_note)
-                textSize = 12f
-                setPadding(0, dp(10), 0, 0)
-            })
-        }
-        val scroll = ScrollView(activity).apply {
-            addView(content)
-        }
-
-        val dialog = AlertDialog.Builder(activity)
-            .setTitle("${activity.getString(R.string.runtime_preflight_title)} · $projectName")
-            .setView(scroll)
-            .setNegativeButton(R.string.common_cancel, null)
-            .setPositiveButton(R.string.runtime_preflight_save_and_run, null)
-            .create()
-
-        dialog.setOnShowListener {
-            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
-                val values = linkedMapOf<ProjectConfigurationInspector.Requirement, String>()
-                for ((requirement, input) in fields) {
-                    val value = input.text.toString()
-                    if (value.isBlank()) {
-                        toast(activity.getString(R.string.runtime_configuration_blank_value, requirement.name))
-                        return@setOnClickListener
-                    }
-                    values[requirement] = value
-                }
-
-                val saved = mutableListOf<String>()
-                runCatching {
-                    values.forEach { (requirement, value) ->
-                        store.saveEnvironmentValue(folderName, requirement.name, value)
-                        saved += requirement.name
-                    }
-                }.onSuccess {
-                    dialog.dismiss()
-                    onChanged()
-                    val verified = snapshot(projectDocumentId, folderName)
-                    if (verified.preflight.ready) {
-                        onSavedAndRun()
-                    } else {
-                        errorDialog(
-                            activity.getString(R.string.runtime_preflight_save_failed),
-                            verified.preflight.missingRequired.joinToString(", ") { it.name },
-                        )
-                    }
-                }.onFailure { error ->
-                    saved.forEach { name -> runCatching { store.clearEnvironmentValue(folderName, name) } }
-                    errorDialog(
-                        activity.getString(R.string.runtime_preflight_save_failed),
-                        error.message ?: error.javaClass.simpleName,
-                    )
-                }
-            }
-        }
-        dialog.show()
-    }
-
     private fun errorDialog(title: String, message: String) {
         if (activity.isFinishing || activity.isDestroyed) return
         AlertDialog.Builder(activity)
@@ -419,7 +452,4 @@ class ProjectConfigurationUiController(
 
     private fun toast(message: String) =
         Toast.makeText(activity, message, Toast.LENGTH_SHORT).show()
-
-    private fun dp(value: Int): Int =
-        (value * activity.resources.displayMetrics.density).toInt()
 }
