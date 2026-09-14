@@ -81,7 +81,58 @@ class ProjectActionPolicyTest {
 
         assertEquals(ProjectActionPolicy.Action.START, policy.primaryAction)
         assertTrue(policy.isEnabled(ProjectActionPolicy.Action.START))
-        assertFalse(policy.isEnabled(ProjectActionPolicy.Action.CONFIGURE))
+        assertTrue(policy.isEnabled(ProjectActionPolicy.Action.CONFIGURE))
+    }
+
+    @Test
+    fun `configuration stays available before environment preparation`() {
+        val policy = ProjectActionPolicy.resolve(
+            snapshot(
+                lifecycle = RuntimeState.UNKNOWN,
+                environment = ProjectUiSnapshot.Environment(ProjectUiSnapshot.Readiness.NOT_READY),
+            ),
+        )
+
+        assertEquals(ProjectActionPolicy.Action.PREPARE, policy.primaryAction)
+        assertFalse(policy.isEnabled(ProjectActionPolicy.Action.START))
+        assertTrue(policy.isEnabled(ProjectActionPolicy.Action.CONFIGURE))
+    }
+
+    @Test
+    fun `configuration stays available when runtime selection is unresolved`() {
+        val policy = ProjectActionPolicy.resolve(
+            snapshot(
+                runtime = ProjectUiSnapshot.Runtime(
+                    selection = ProjectUiSnapshot.Runtime.Selection(
+                        status = ProjectUiSnapshot.Runtime.SelectionStatus.AMBIGUOUS,
+                        candidates = listOf(RuntimeKind.PYTHON, RuntimeKind.NODE_JS),
+                    ),
+                    supported = true,
+                ),
+                environment = ProjectUiSnapshot.Environment(ProjectUiSnapshot.Readiness.NOT_READY),
+            ),
+        )
+
+        assertFalse(policy.isEnabled(ProjectActionPolicy.Action.START))
+        assertTrue(policy.isEnabled(ProjectActionPolicy.Action.CONFIGURE))
+    }
+
+    @Test
+    fun `configuration stays available when runtime host is unavailable`() {
+        val policy = ProjectActionPolicy.resolve(
+            snapshot(
+                runtime = ProjectUiSnapshot.Runtime(
+                    selection = ProjectUiSnapshot.Runtime.Selection(
+                        status = ProjectUiSnapshot.Runtime.SelectionStatus.RESOLVED,
+                        primary = RuntimeKind.PYTHON,
+                    ),
+                    supported = false,
+                ),
+            ),
+        )
+
+        assertFalse(policy.isEnabled(ProjectActionPolicy.Action.START))
+        assertTrue(policy.isEnabled(ProjectActionPolicy.Action.CONFIGURE))
     }
 
     @Test
@@ -100,7 +151,7 @@ class ProjectActionPolicyTest {
 
         assertEquals(ProjectActionPolicy.Action.START, policy.primaryAction)
         assertTrue(policy.isEnabled(ProjectActionPolicy.Action.START))
-        assertFalse(policy.isEnabled(ProjectActionPolicy.Action.CONFIGURE))
+        assertTrue(policy.isEnabled(ProjectActionPolicy.Action.CONFIGURE))
         assertEquals(ProjectActionPolicy.DetailEntry.RUNTIME, policy.detailEntry)
     }
 
@@ -120,7 +171,7 @@ class ProjectActionPolicyTest {
 
         assertEquals(ProjectActionPolicy.Action.START, policy.primaryAction)
         assertTrue(policy.isEnabled(ProjectActionPolicy.Action.START))
-        assertFalse(policy.isEnabled(ProjectActionPolicy.Action.CONFIGURE))
+        assertTrue(policy.isEnabled(ProjectActionPolicy.Action.CONFIGURE))
         assertTrue(snapshot(
             lifecycle = RuntimeState.STOPPED_BY_USER,
             environment = ProjectUiSnapshot.Environment(ProjectUiSnapshot.Readiness.READY),
@@ -168,6 +219,7 @@ class ProjectActionPolicyTest {
 
         assertEquals(ProjectActionPolicy.Action.STOP, policy.primaryAction)
         assertTrue(policy.isEnabled(ProjectActionPolicy.Action.STOP))
+        assertTrue(policy.isEnabled(ProjectActionPolicy.Action.CONFIGURE))
         assertEquals(ProjectActionPolicy.DisableReason.PROCESS_ACTIVE, policy.reasonFor(ProjectActionPolicy.Action.START))
     }
 

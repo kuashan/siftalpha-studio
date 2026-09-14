@@ -503,11 +503,7 @@ class V04Activity : StudioActivity() {
                     projectName = summary.name,
                     projectDocumentId = summary.documentId,
                     folderName = project.folderName,
-                    onCompleted = { savedAny ->
-                        if (savedAny && configurationSnapshot.runtimeConfigurationDiscovered) {
-                            startProject(project, webProfile)
-                        }
-                    },
+                    onCompleted = { retryProjectAfterConfiguration(project, webProfile) },
                 )
             }.apply {
                 isEnabled = policy.isEnabled(ProjectActionPolicy.Action.CONFIGURE)
@@ -583,8 +579,6 @@ class V04Activity : StudioActivity() {
                 R.string.runtime_policy_reason_environment_not_ready
             ProjectActionPolicy.DisableReason.REQUIRED_CONFIGURATION_MISSING ->
                 R.string.runtime_policy_reason_required_configuration_missing
-            ProjectActionPolicy.DisableReason.CONFIGURATION_DISCOVERY_REQUIRED ->
-                R.string.runtime_policy_reason_configuration_discovery_required
             ProjectActionPolicy.DisableReason.WEB_NOT_AVAILABLE ->
                 R.string.runtime_policy_reason_web_not_available
             ProjectActionPolicy.DisableReason.SOURCE_NOT_AVAILABLE ->
@@ -858,10 +852,33 @@ class V04Activity : StudioActivity() {
             projectDocumentId = project.summary.documentId,
             folderName = project.folderName,
             output = text,
-            onConfigurationCompleted = { savedAny ->
-                if (savedAny) startProject(project)
-            },
+            onConfigurationCompleted = { retryProjectAfterConfiguration(project) },
         )
+    }
+
+    private fun retryProjectAfterConfiguration(
+        project: V04ProjectGateway.RuntimeProject,
+        webProfile: WebProjectInspector.Profile? = null,
+    ) {
+        val stateKey = project.summary.documentId
+        // Configuration can be opened before preparation. In that state saving or skipping values
+        // must not issue a doomed runtime command; the normal Prepare -> Run flow remains intact.
+        if (environmentStates[stateKey] != true) return
+        if (pending.values.any { item ->
+                item.documentId == project.summary.documentId ||
+                    (item.documentId == null && item.folderName == project.folderName)
+            }) {
+            return
+        }
+        if (typedStates[stateKey] in setOf(
+                RuntimeState.PREPARING,
+                RuntimeState.STARTING,
+                RuntimeState.RUNNING,
+            )
+        ) {
+            return
+        }
+        startProject(project, webProfile)
     }
 
     private fun handleResult(item: Pending, result: RuntimeResult) {

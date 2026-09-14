@@ -105,7 +105,7 @@ class ProjectConfigurationUiController(
         projectName: String,
         projectDocumentId: String,
         folderName: String,
-        onCompleted: (savedAny: Boolean) -> Unit = {},
+        onCompleted: () -> Unit = {},
     ) {
         val snapshot = snapshot(projectDocumentId, folderName)
         val items = buildItems(snapshot)
@@ -148,7 +148,7 @@ class ProjectConfigurationUiController(
         folderName: String,
         snapshot: Snapshot,
         items: List<DisplayItem>,
-        onCompleted: (savedAny: Boolean) -> Unit,
+        onCompleted: () -> Unit,
     ) {
         val labels = items.map { item ->
             val state = stateLabel(snapshot, item.name, item.required)
@@ -179,7 +179,7 @@ class ProjectConfigurationUiController(
                     projectDocumentId = projectDocumentId,
                     folderName = folderName,
                     item = items[which],
-                    onSaved = { onCompleted(true) },
+                    onSaved = onCompleted,
                 )
             }
             .setNegativeButton(R.string.common_close, null)
@@ -191,12 +191,11 @@ class ProjectConfigurationUiController(
         folderName: String,
         items: List<DisplayItem>,
         index: Int = 0,
-        savedAny: Boolean = false,
-        onCompleted: (savedAny: Boolean) -> Unit = {},
+        onCompleted: () -> Unit = {},
     ) {
         if (index >= items.size) {
             onChanged()
-            onCompleted(savedAny)
+            onCompleted()
             toast(activity.getString(R.string.runtime_configuration_completed))
             return
         }
@@ -248,7 +247,6 @@ class ProjectConfigurationUiController(
                         folderName = folderName,
                         items = items,
                         index = index + 1,
-                        savedAny = savedAny,
                         onCompleted = onCompleted,
                     )
                 }
@@ -267,7 +265,6 @@ class ProjectConfigurationUiController(
                             folderName = folderName,
                             items = items,
                             index = index + 1,
-                            savedAny = true,
                             onCompleted = onCompleted,
                         )
                     }
@@ -288,7 +285,7 @@ class ProjectConfigurationUiController(
         projectDocumentId: String,
         folderName: String,
         output: String,
-        onConfigurationCompleted: (savedAny: Boolean) -> Unit = {},
+        onConfigurationCompleted: () -> Unit = {},
     ): Boolean {
         val finding = RuntimeConfigurationDiagnostic.inspect(output)
         if (!finding.hasActionableFinding) return false

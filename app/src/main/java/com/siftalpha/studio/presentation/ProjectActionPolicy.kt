@@ -55,7 +55,6 @@ object ProjectActionPolicy {
         ENVIRONMENT_UNKNOWN("runtime_policy_reason_environment_unknown"),
         ENVIRONMENT_NOT_READY("runtime_policy_reason_environment_not_ready"),
         REQUIRED_CONFIGURATION_MISSING("runtime_policy_reason_required_configuration_missing"),
-        CONFIGURATION_DISCOVERY_REQUIRED("runtime_policy_reason_configuration_discovery_required"),
         WEB_NOT_AVAILABLE("runtime_policy_reason_web_not_available"),
         SOURCE_NOT_AVAILABLE("runtime_policy_reason_source_not_available"),
     }
@@ -113,11 +112,10 @@ object ProjectActionPolicy {
     fun resolve(snapshot: ProjectUiSnapshot): Result {
         val actions = linkedMapOf<Action, ActionDecision>()
         actions[Action.EDIT] = enabled()
-        actions[Action.CONFIGURE] = if (snapshot.configuration.runtimeConfigurationDiscovered) {
-            enabled()
-        } else {
-            disabled(DisableReason.CONFIGURATION_DISCOVERY_REQUIRED)
-        }
+        // Configuration is a project-level operation, not a runtime-discovery result. It remains
+        // available before and after environment preparation so the user can review or enter
+        // optional values proactively. The Run action is still responsible for runtime detection.
+        actions[Action.CONFIGURE] = enabled()
         actions[Action.OPEN_SOURCE] = if (snapshot.identity.sourceUrl.isNullOrBlank()) {
             disabled(DisableReason.SOURCE_NOT_AVAILABLE)
         } else {
@@ -134,7 +132,6 @@ object ProjectActionPolicy {
         )
         if (!snapshot.runtime.supported) {
             runtimeActions.forEach { actions[it] = disabled(DisableReason.RUNTIME_HOST_UNAVAILABLE) }
-            actions[Action.CONFIGURE] = disabled(DisableReason.RUNTIME_HOST_UNAVAILABLE)
             actions[Action.OPEN_BROWSER] = disabled(DisableReason.WEB_NOT_AVAILABLE)
             return result(
                 actions = actions,
@@ -211,7 +208,6 @@ object ProjectActionPolicy {
             actions[Action.STOP] = disabled(DisableReason.PROCESS_NOT_ACTIVE)
             when {
                 selectionReason != null -> {
-                    actions[Action.CONFIGURE] = disabled(selectionReason)
                     primaryAction = Action.STATUS
                     secondaryAction = Action.CLEAN
                     message = MessageKey.RUNTIME_SELECTION_REQUIRED

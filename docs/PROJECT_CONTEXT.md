@@ -29,13 +29,15 @@ than silently relying on the old note.
 
 ## Current candidate（当前候选版本）
 
-- Candidate: `0.8.0-alpha9`
-- Android `versionCode`（版本代码）: `85`
+- Candidate: `0.8.0-alpha10`
+- Android `versionCode`（版本代码）: `86`
 - Feature branch（功能分支）: `codex/w1c-config-wizard`
 - Active PR: #5, open, Draft（草稿）, unmerged（未合并）
-- Code candidate tested by cloud CI（云端持续集成）: commit `8615c68204633e0912cfac432e564ad59c1dfa31`
+- Previous alpha9 code candidate tested by cloud CI（云端持续集成）: commit
+  `8615c68204633e0912cfac432e564ad59c1dfa31`
 - Current feature slice（当前功能切片）: W1C Python configuration detection and sequential
-  configuration wizard（Python 配置检测和顺序配置向导）.
+  configuration wizard（Python 配置检测和顺序配置向导）, with the configuration-button and
+  run-as-detection correction in the alpha10 candidate.
 
 ### Latest cloud validation（最近一次云端验证）
 
@@ -47,7 +49,7 @@ All three checks for the code candidate completed successfully:
 
 Artifact（构建产物）: `SiftAlpha-Studio-debug-ab2598d18d70be751c622d8f083c6524040f79af`
 
-Downloaded test package（已下载测试包）: `SiftAlpha-Studio-v0.8.0-alpha9-code85-debug.zip`,
+Downloaded alpha9 test package（已下载 alpha9 测试包）: `SiftAlpha-Studio-v0.8.0-alpha9-code85-debug.zip`,
 containing `app-debug.apk`.
 
 - APK SHA-256 checksum（APK 文件校验值）:
@@ -58,6 +60,13 @@ containing `app-debug.apk`.
   正式受信签名）.
 - Device acceptance（真机验收）: `PENDING`（待验收） as of this update. Do not mark W1C as
   accepted until the user reports the result.
+
+### Alpha10 validation status（Alpha10 验证状态）
+
+The alpha10 correction is code-changing and requires a new cloud build and a new ordinary Debug
+APK. Its commit, Actions run IDs, artifact name, checksum, and device-acceptance result must be
+appended here after the cloud build completes. Until then, alpha9 remains the last delivered test
+package.
 
 ## Confirmed user requirements（已确认的用户要求）
 
@@ -92,14 +101,16 @@ containing `app-debug.apk`.
 The accepted target flow is:
 
 1. Import a Python project and prepare its environment.
-2. After preparation succeeds, enable `Run`; do not enable `Configuration` merely because static
-   inspection found optional candidates.
-3. The first run is allowed to expose what configuration the runtime actually needs.
-4. Once an actionable runtime finding is reported, enable `Configuration` and show the required
-   values sequentially.
+2. Keep `Configuration` available before and after preparation, unless a conflicting runtime
+   operation is pending. It may show static candidates or saved values proactively.
+3. After preparation succeeds, enable `Run`; the first run is the runtime detection pass.
+4. Once an actionable runtime finding is reported, use `Configuration` to show the required values
+   sequentially.
 5. Runtime-reported required items cannot be skipped. Static optional candidates may be skipped.
-6. After at least one value is saved, automatically run the project once again. Skipping optional
-   candidates alone must not cause an endless retry/prompt loop.
+6. After the configuration action completes, automatically run the project once again when the
+   environment is ready, including when optional candidates were skipped. This is a fresh runtime
+   detection pass; it must not issue a runtime command before preparation or while another operation
+   is pending.
 7. Keep the list editor available for later updates or clearing Studio-managed values.
 
 Configuration values remain in the existing Android Keystore-backed protected store and one-shot
@@ -117,7 +128,8 @@ runtime payload. Never write them to source files, `.env`, logs, GitHub, or this
 
 ## Current next action（当前下一步）
 
-The user should install the alpha9 ordinary Debug APK and test the W1C flow on the authorized
-device. After the user's result is reported, append the result to `docs/DEV_LOG.md`, update the
-status in this file, and then either continue the next feature slice or prepare the accepted batch
-for merge.
+The alpha10 ordinary Debug APK must be built in GitHub Actions and then installed on the authorized
+device. Test the configuration button before and after preparation, the Run detection pass, the
+required/optional split, optional skipping, and the automatic post-configuration rerun. After the
+user's result is reported, append it to `docs/DEV_LOG.md`, update the status in this file, and then
+either continue the next feature slice or prepare the accepted batch for merge.

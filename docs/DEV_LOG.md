@@ -27,9 +27,9 @@ changes, validation evidence, artifact information, device acceptance, and next 
 
 - Branch/PR: `codex/w1c-config-wizard`, PR #5, Draft and unmerged.
 - Candidate: `0.8.0-alpha9`, `versionCode 85`.
-- User requirement: after environment preparation, `Run` must be available; the first run should
-  reveal runtime-required configuration; `Configuration` becomes available only after an actionable
-  finding; required values cannot be skipped; saving configuration automatically retries the run.
+- User requirement at the time: after environment preparation, `Run` must be available; the first
+  run should reveal runtime-required configuration; required values cannot be skipped; saving
+  configuration automatically retries the run.
 - Implementation: static Python inspection distinguishes required direct environment access from
   optional getters; runtime errors can promote missing names to required findings; the sequential
   wizard saves values through the protected store and automatically retries after a saved change.
@@ -46,6 +46,23 @@ changes, validation evidence, artifact information, device acceptance, and next 
 - Device acceptance: `PENDING`; the user must test the flow on a real device.
 - Next action: record the user's result before changing the acceptance status or deciding on merge.
 - Detailed note: [V0_8_W1C_CONFIGURATION_WIZARD_2026-09-14.md](DEV_NOTES/V0_8_W1C_CONFIGURATION_WIZARD_2026-09-14.md).
+
+## 2026-09-14 — Configuration button and run-as-detection correction（配置按钮与运行检测修正）
+
+- User correction: Configuration must not be gated by runtime discovery. It should be available
+  before and after environment preparation; Run is the detection operation.
+- Required behavior: a run may report necessary or non-necessary configuration. Non-necessary
+  values can be skipped without blocking the project. Completing the configuration action triggers
+  one more run when the environment is ready, so the project is checked again.
+- Implementation: the action policy now treats Configuration as an independent project operation;
+  the wizard completion callback no longer depends on whether a value was saved or runtime
+  discovery had already happened; the retry is guarded against an unprepared environment, an
+  active process, and another pending operation.
+- Candidate bump: `0.8.0-alpha10`, `versionCode 86`.
+- Validation status: local static checks and cloud build `PENDING` until the new candidate runs
+  through GitHub Actions. A new Debug APK is required for real-device acceptance.
+- Device acceptance: `PENDING`.
+- Next action: provide the alpha10 Debug APK, then record the user's device result.
 
 ## 2026-09-14 — Launcher icon repair（启动图标修复）
 

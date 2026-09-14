@@ -58,7 +58,6 @@
     <string name="runtime_policy_reason_environment_unknown">実行環境の状態が未確認です</string>
     <string name="runtime_policy_reason_environment_not_ready">実行環境が未準備です</string>
     <string name="runtime_policy_reason_required_configuration_missing">必須設定が不足しています</string>
-    <string name="runtime_policy_reason_configuration_discovery_required">プロジェクトから設定の必要性がまだ報告されていません</string>
     <string name="runtime_policy_reason_web_not_available">Web エンドポイントの利用可能性が未確認です</string>
     <string name="runtime_policy_reason_source_not_available">利用可能なソースリンクがありません</string>
     <string name="runtime_browser_label">ブラウザ · %1$s</string>

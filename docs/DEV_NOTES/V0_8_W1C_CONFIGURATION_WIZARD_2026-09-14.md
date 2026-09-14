@@ -33,16 +33,20 @@ actually needs.
 
 ## Wizard behavior
 
-- Configuration remains disabled until a running project reports an actionable configuration
-  finding. Tapping Configuration then opens a sequential wizard when any discovered item is not
-  configured.
+- Configuration remains available on the project card before and after environment preparation
+  (apart from a conflicting pending operation). It can be opened proactively to review or enter
+  discovered candidates, while Run remains the operation that detects what the running project
+  actually needs.
+- After Run reports an actionable configuration finding, tapping Configuration opens a sequential
+  wizard when any discovered item is not configured.
 - Runtime-reported missing items cannot be skipped; static optional candidates can be skipped.
 - Save and continue advances to the next pending item. After the final item, Runtime Center
-  refreshes the project card. If at least one value was saved during a runtime-repair flow, the
-  project is started once automatically. Skipping optional candidates alone does not trigger a
-  retry, preventing a repeated failure/prompt loop.
+  refreshes the project card and, when the environment is ready, starts the project once
+  automatically—even when the user skipped optional candidates—so the next run performs a fresh
+  detection pass. If the environment is not ready yet, no doomed runtime command is issued.
 - Once all detected items are configured, the existing list editor remains available for update or
-  clearing Studio-managed values; saving an edited value also triggers the pending retry.
+  clearing Studio-managed values; saving an edited value also triggers the same ready-environment
+  retry.
 
 ## Secret boundary
 

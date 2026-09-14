@@ -58,7 +58,6 @@
     <string name="runtime_policy_reason_environment_unknown">런타임 환경 상태가 확인되지 않음</string>
     <string name="runtime_policy_reason_environment_not_ready">런타임 환경이 준비되지 않음</string>
     <string name="runtime_policy_reason_required_configuration_missing">필수 구성이 없음</string>
-    <string name="runtime_policy_reason_configuration_discovery_required">프로젝트가 아직 구성 필요성을 보고하지 않음</string>
     <string name="runtime_policy_reason_web_not_available">Web 엔드포인트가 사용 가능하다고 확인되지 않음</string>
     <string name="runtime_policy_reason_source_not_available">사용 가능한 소스 링크가 없음</string>
     <string name="runtime_browser_label">브라우저 · %1$s</string>

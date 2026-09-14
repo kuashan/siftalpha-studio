@@ -58,7 +58,6 @@
     <string name="runtime_policy_reason_environment_unknown">运行环境状态尚未确认</string>
     <string name="runtime_policy_reason_environment_not_ready">运行环境未准备</string>
     <string name="runtime_policy_reason_required_configuration_missing">缺少必需配置</string>
-    <string name="runtime_policy_reason_configuration_discovery_required">尚未从运行结果发现配置需求</string>
     <string name="runtime_policy_reason_web_not_available">Web 端点尚未确认可用</string>
     <string name="runtime_policy_reason_source_not_available">没有可用的来源链接</string>
     <string name="runtime_browser_label">浏览器 · %1$s</string>
