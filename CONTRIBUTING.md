@@ -12,7 +12,7 @@ Unsolicited code pull requests and code contributions are not accepted. Submit a
 
 ### Before opening an invited pull request
 
-1. Keep changes focused and preserve the Android application id and current version unless the change explicitly requires a release update.
+1. Keep changes focused and preserve the Android application id. If the change produces an installable candidate, increase `versionCode` over `main` and update `versionName`.
 2. Keep all five locale resource sets aligned: English, Simplified Chinese, Traditional Chinese, Japanese, and Korean.
 3. Run the localization validators:
 
@@ -21,12 +21,9 @@ Unsolicited code pull requests and code contributions are not accepted. Submit a
    python3 tools/validate_localized_ui_sources.py
    ```
 
-4. Run the JVM unit suite and debug build:
-
-   ```text
-   gradle --no-daemon :app:testDebugUnitTest
-   gradle --no-daemon :app:assembleDebug
-   ```
+4. Use the GitHub Actions checks as the build environment. A local Gradle/JDK/Android SDK setup is
+   not required; review the Android Debug APK, Exact Head Unit, and Localization results on the
+   pull request and use the cloud artifact for device testing.
 
 5. Run `git diff --check` and describe any real-device Runtime or Termux/PRoot regression coverage in the pull request.
 
