@@ -16,7 +16,7 @@
     <string name="settings_browser_required_title">请先选择浏览器</string>
     <string name="settings_browser_required_message">请先在“设置 > 浏览器”中选择浏览器。之后“打开浏览器”会直接使用它，不再重复询问。</string>
     <string name="settings_about_section">关于</string>
-    <string name="settings_about_summary">用于管理本地项目、运行环境与自动化任务的移动工作区。</string>
+    <string name="settings_about_summary">用于管理本地项目、运行环境与自动化任务的移动工作区。这个世界很美。</string>
     <string name="settings_version">版本 %1$s</string>
     <string name="settings_application_id">应用 ID：%1$s</string>
 </resources>
