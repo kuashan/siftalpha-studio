@@ -5,7 +5,7 @@ Date（日期）: 2026-09-14
 Branch/PR（分支/合并请求）: codex/w1c-config-wizard, PR #5, Draft（草稿）  
 Candidate（候选版本）: 0.8.0-alpha12, versionCode 88  
 Application id（应用标识）: com.siftalpha.studio  
-Code candidate commit（代码候选提交）: 00ee9cbe1af5590d4296adf07eaa472bbd4e5a8c
+Code candidate commit（代码候选提交）: fcf4393d89e9251a794939b1183c259aac4833b4
 
 ## Goal（目标）
 
