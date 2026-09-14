@@ -82,7 +82,7 @@ class PrepareLiveProgressController(
                 stdout.lineSequence()
                     .map { it.trimEnd() }
                     .filter { it.startsWith("SIFTALPHA_PREPARE_") }
-                    .joinToString("\\n")
+                    .joinToString("\n")
             }
 
     private fun schedule(folderName: String, delayMs: Long) {
