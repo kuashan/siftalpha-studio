@@ -59,10 +59,17 @@ changes, validation evidence, artifact information, device acceptance, and next 
   discovery had already happened; the retry is guarded against an unprepared environment, an
   active process, and another pending operation.
 - Candidate bump: `0.8.0-alpha10`, `versionCode 86`.
-- Validation status: local static checks and cloud build `PENDING` until the new candidate runs
-  through GitHub Actions. A new Debug APK is required for real-device acceptance.
+- Code candidate commit: `23ccb2161ec8039c01877e0c46d76dd99ab93426`.
+- Validation status: local static checks passed; all three cloud checks passed:
+  - [Android Debug APK 34808995008](https://github.com/kuashan/siftalpha-studio/actions/runs/34808995008)
+  - [Exact Head Unit 34808994996](https://github.com/kuashan/siftalpha-studio/actions/runs/34808994996)
+  - [Localization 34808994993](https://github.com/kuashan/siftalpha-studio/actions/runs/34808994993)
+- Test artifact: `SiftAlpha-Studio-v0.8.0-alpha10-code86-debug.zip`, containing the ordinary
+  Debug APK. APK SHA-256:
+  `e8b953944bb69500ab1aed8ac8a8c33590a79366048574d26401e2e3c61b1df6`.
 - Device acceptance: `PENDING`.
-- Next action: provide the alpha10 Debug APK, then record the user's device result.
+- Next action: the alpha10 Debug APK has been provided; record the user's device result after
+  installation and testing.
 
 ## 2026-09-14 — Launcher icon repair（启动图标修复）
 

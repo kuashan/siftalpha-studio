@@ -39,34 +39,29 @@ than silently relying on the old note.
   configuration wizard（Python 配置检测和顺序配置向导）, with the configuration-button and
   run-as-detection correction in the alpha10 candidate.
 
-### Latest cloud validation（最近一次云端验证）
+### Latest alpha10 cloud validation（最近一次 alpha10 云端验证）
 
-All three checks for the code candidate completed successfully:
+All three checks for the alpha10 code candidate completed successfully:
 
-- [Android Debug APK run 34806983723](https://github.com/kuashan/siftalpha-studio/actions/runs/34806983723)
-- [Exact Head Unit run 34806983715](https://github.com/kuashan/siftalpha-studio/actions/runs/34806983715)
-- [Localization run 34806983732](https://github.com/kuashan/siftalpha-studio/actions/runs/34806983732)
+- [Android Debug APK run 34808995008](https://github.com/kuashan/siftalpha-studio/actions/runs/34808995008)
+- [Exact Head Unit run 34808994996](https://github.com/kuashan/siftalpha-studio/actions/runs/34808994996)
+- [Localization run 34808994993](https://github.com/kuashan/siftalpha-studio/actions/runs/34808994993)
 
-Artifact（构建产物）: `SiftAlpha-Studio-debug-ab2598d18d70be751c622d8f083c6524040f79af`
+Code candidate commit（代码候选提交）: `23ccb2161ec8039c01877e0c46d76dd99ab93426`.
 
-Downloaded alpha9 test package（已下载 alpha9 测试包）: `SiftAlpha-Studio-v0.8.0-alpha9-code85-debug.zip`,
+Artifact（构建产物）: `SiftAlpha-Studio-debug-ec982c4a05d977753a1979d389961e2648a8d4cf`
+
+Downloaded alpha10 test package（已下载 alpha10 测试包）: `SiftAlpha-Studio-v0.8.0-alpha10-code86-debug.zip`,
 containing `app-debug.apk`.
 
 - APK SHA-256 checksum（APK 文件校验值）:
-  `339ced7e2cce565b449476b6f0356775e8a016b2583d00b3f75d13578ad27cc2`
+  `e8b953944bb69500ab1aed8ac8a8c33590a79366048574d26401e2e3c61b1df6`
 - ZIP SHA-256 checksum（ZIP 文件校验值）:
-  `01f6e2ea313f31f78245e6b0940a8440820dc68f1439edee3449dac5ff4bbf43`
+  `a5f00b0c82d32115dc3eed37e8ac71273cfd867e93f051c43b4cee91513ceef9`
 - Signing（签名）: ordinary public Debug signing（普通公开调试签名）, not Trusted Signed（不是
   正式受信签名）.
 - Device acceptance（真机验收）: `PENDING`（待验收） as of this update. Do not mark W1C as
   accepted until the user reports the result.
-
-### Alpha10 validation status（Alpha10 验证状态）
-
-The alpha10 correction is code-changing and requires a new cloud build and a new ordinary Debug
-APK. Its commit, Actions run IDs, artifact name, checksum, and device-acceptance result must be
-appended here after the cloud build completes. Until then, alpha9 remains the last delivered test
-package.
 
 ## Confirmed user requirements（已确认的用户要求）
 
@@ -128,8 +123,8 @@ runtime payload. Never write them to source files, `.env`, logs, GitHub, or this
 
 ## Current next action（当前下一步）
 
-The alpha10 ordinary Debug APK must be built in GitHub Actions and then installed on the authorized
-device. Test the configuration button before and after preparation, the Run detection pass, the
-required/optional split, optional skipping, and the automatic post-configuration rerun. After the
-user's result is reported, append it to `docs/DEV_LOG.md`, update the status in this file, and then
-either continue the next feature slice or prepare the accepted batch for merge.
+The alpha10 ordinary Debug APK is ready to install on the authorized device. Test the configuration
+button before and after preparation, the Run detection pass, the required/optional split, optional
+skipping, and the automatic post-configuration rerun. After the user's result is reported, append
+it to `docs/DEV_LOG.md`, update the status in this file, and then either continue the next feature
+slice or prepare the accepted batch for merge.
