@@ -2,9 +2,6 @@ plugins {
     id("com.android.application")
 }
 
-val trustedKeystorePayload = providers.gradleProperty("SIFTALPHA_DEBUG_KEYSTORE_B64")
-    .orElse(providers.environmentVariable("SIFTALPHA_DEBUG_KEYSTORE_B64"))
-    .orNull
 val trustedStorePassword = providers.gradleProperty("SIFTALPHA_DEBUG_STORE_PASSWORD")
     .orElse(providers.environmentVariable("SIFTALPHA_DEBUG_STORE_PASSWORD"))
     .orNull
@@ -18,7 +15,6 @@ val trustedKeystoreFile = providers.gradleProperty("siftalphaDebugKeystoreFile")
     .orElse(providers.environmentVariable("SIFTALPHA_DEBUG_KEYSTORE_FILE"))
     .orNull
 val trustedSigningEnabled = listOf(
-    trustedKeystorePayload,
     trustedStorePassword,
     trustedKeyAlias,
     trustedKeyPassword,
