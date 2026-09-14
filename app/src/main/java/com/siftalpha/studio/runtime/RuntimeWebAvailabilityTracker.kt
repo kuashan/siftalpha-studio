@@ -57,13 +57,38 @@ class RuntimeWebAvailabilityTracker(
         runtimeState: RuntimeState,
         candidateUrls: List<String>,
     ): String? {
-        if (runtimeState != RuntimeState.RUNNING || candidateUrls.isEmpty()) return null
-        val now = clock()
+        if (endpointReachable(projectKey, runtimeState, candidateUrls) != true) return null
         val urls = candidateUrls.distinct()
-        urls.forEach { url -> ensureProbe(projectKey, url, now) }
         return urls.firstOrNull { url ->
             val result = results[key(projectKey, url)] ?: return@firstOrNull false
             result.generation == generation(projectKey) && result.reachable
+        }
+    }
+
+    /**
+     * Returns the latest tri-state endpoint fact while scheduling any missing probe.
+     *
+     * A null result means that a candidate exists but no probe result is available yet. That is
+     * intentionally different from false: the card can show Detecting/Starting instead of
+     * reporting a verified failure during the first render.
+     */
+    fun endpointReachable(
+        projectKey: String,
+        runtimeState: RuntimeState,
+        candidateUrls: List<String>,
+    ): Boolean? {
+        if (runtimeState != RuntimeState.RUNNING) return null
+        if (candidateUrls.isEmpty()) return false
+        val now = clock()
+        val urls = candidateUrls.distinct()
+        urls.forEach { url -> ensureProbe(projectKey, url, now) }
+        val current = urls.mapNotNull { url ->
+            results[key(projectKey, url)]?.takeIf { it.generation == generation(projectKey) }
+        }
+        return when {
+            current.any { it.reachable } -> true
+            current.size == urls.size -> false
+            else -> null
         }
     }
 
