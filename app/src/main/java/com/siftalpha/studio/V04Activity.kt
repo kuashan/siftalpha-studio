@@ -256,8 +256,6 @@ class V04Activity : StudioActivity() {
 
     private fun card(project: V04ProjectGateway.RuntimeProject): android.view.View {
         val summary = project.summary
-        // Keep the legacy inspector alive for the old dedicated dialog while the generic controller
-        // bridges only an explicitly REQUIRED legacy policy into its product-level preflight model.
         val secretPolicy = runCatching { secretPolicyInspector.inspect(summary.documentId) }
             .getOrElse {
                 ProjectSecretPolicyInspector.Policy(ProjectSecretPolicyInspector.BinanceApiPolicy.UNSPECIFIED)
@@ -471,7 +469,6 @@ class V04Activity : StudioActivity() {
         )
     }
 
-    /** Legacy dedicated editor retained for migration; new project cards use the generic Configuration UI. */
     private fun showSecretsDialog(project: V04ProjectGateway.RuntimeProject) {
         val policy = runCatching { secretPolicyInspector.inspect(project.summary.documentId) }.getOrNull()
         if (policy?.binanceApi == ProjectSecretPolicyInspector.BinanceApiPolicy.NOT_REQUIRED) {
@@ -676,8 +673,6 @@ class V04Activity : StudioActivity() {
 
     private fun registerPending(id: Int, item: Pending) {
         pending[id] = item
-        // If the command finished before Pending was registered, the listener intentionally left the
-        // result in TermuxResultBus. Reconcile it immediately so UI state can never remain stuck.
         TermuxResultBus.consume(id)?.let(resultListener)
     }
 
@@ -922,31 +917,36 @@ class V04Activity : StudioActivity() {
             return
         }
 
-        val items = browsers.map { "${it.label}\n${it.packageName}" }.toTypedArray()
-
-        AlertDialog.Builder(this)
-            .setTitle(getString(R.string.runtime_choose_browser))
-            .setItems(items) { _, which ->
-                val target = browsers[which]
-                val intent = Intent(Intent.ACTION_VIEW, uri).apply {
-                    addCategory(Intent.CATEGORY_BROWSABLE)
-                    setPackage(target.packageName)
+        val selectedPackage = StudioBrowser.selectedPackage(this)
+        val target = browsers.firstOrNull { it.packageName == selectedPackage }
+        if (target == null) {
+            AlertDialog.Builder(this)
+                .setTitle(getString(R.string.settings_browser_required_title))
+                .setMessage(getString(R.string.settings_browser_required_message))
+                .setNegativeButton(getString(R.string.common_cancel), null)
+                .setPositiveButton(getString(R.string.settings_title)) { _, _ ->
+                    startActivity(Intent(this, SettingsActivity::class.java))
                 }
-                runCatching { startActivity(intent) }
-                    .onFailure {
-                        errorDialog(
-                            getString(R.string.runtime_browser_failed_title),
-                            getString(
-                                R.string.runtime_browser_failed_message,
-                                target.label,
-                                target.packageName,
-                                validatedUrl,
-                            ),
-                        )
-                    }
+                .show()
+            return
+        }
+
+        val intent = Intent(Intent.ACTION_VIEW, uri).apply {
+            addCategory(Intent.CATEGORY_BROWSABLE)
+            setPackage(target.packageName)
+        }
+        runCatching { startActivity(intent) }
+            .onFailure {
+                errorDialog(
+                    getString(R.string.runtime_browser_failed_title),
+                    getString(
+                        R.string.runtime_browser_failed_message,
+                        target.label,
+                        target.packageName,
+                        validatedUrl,
+                    ),
+                )
             }
-            .setNegativeButton(getString(R.string.common_cancel), null)
-            .show()
     }
 
     @Suppress("DEPRECATION")

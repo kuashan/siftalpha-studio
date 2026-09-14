@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_title">설정</string>
+    <string name="settings_language_section">언어</string>
+    <string name="settings_language_summary">SiftAlpha Studio에서 사용할 인터페이스 언어를 선택합니다.</string>
+    <string name="settings_language_current">현재 언어: %1$s</string>
+    <string name="settings_language_change">언어 변경</string>
+    <string name="settings_browser_section">브라우저</string>
+    <string name="settings_browser_summary">‘브라우저 열기’에 사용할 브라우저를 선택합니다. 한 번 선택하면 매번 묻지 않고 바로 엽니다.</string>
+    <string name="settings_browser_current">현재 브라우저: %1$s</string>
+    <string name="settings_browser_not_selected">선택되지 않음</string>
+    <string name="settings_browser_change">브라우저 선택</string>
+    <string name="settings_browser_picker_title">브라우저 선택</string>
+    <string name="settings_browser_no_browser_title">브라우저를 찾을 수 없음</string>
+    <string name="settings_browser_no_browser_message">이 기기에 HTTP/HTTPS 링크를 처리할 수 있는 브라우저가 설치되어 있지 않습니다.</string>
+    <string name="settings_browser_required_title">먼저 브라우저를 선택하세요</string>
+    <string name="settings_browser_required_message">먼저 설정 &gt; 브라우저에서 브라우저를 선택하세요. 이후 ‘브라우저 열기’는 다시 묻지 않고 해당 브라우저를 바로 사용합니다.</string>
+    <string name="settings_about_section">정보</string>
+    <string name="settings_about_summary">로컬 프로젝트, 런타임 및 자동화 작업을 관리하는 모바일 작업 공간입니다.</string>
+    <string name="settings_version">버전 %1$s</string>
+    <string name="settings_application_id">앱 ID: %1$s</string>
+</resources>
