@@ -1,0 +1,96 @@
+name: Signed Release APK
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-publish-release:
+    if: github.repository == 'kuashan/siftalpha-studio' && startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      EXPECTED_CERT_SHA256: 1d96e9ce12c06e6ff0571cf8f82cf2461ac3b5261189ad06ab0747ce92f8192e
+
+    steps:
+      - name: Checkout tagged source
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.3.1'
+
+      - name: Restore signing keystore
+        env:
+          SIFTALPHA_DEBUG_KEYSTORE_B64: ${{ secrets.SIFTALPHA_DEBUG_KEYSTORE_B64 }}
+        run: |
+          set -euo pipefail
+          keystore="${RUNNER_TEMP}/siftalpha-release-keystore"
+          printf '%s' "$SIFTALPHA_DEBUG_KEYSTORE_B64" | base64 --decode > "$keystore"
+          test -s "$keystore"
+          echo "SIFTALPHA_DEBUG_KEYSTORE_FILE=$keystore" >> "$GITHUB_ENV"
+
+      - name: Build signed release APK
+        env:
+          SIFTALPHA_DEBUG_STORE_PASSWORD: ${{ secrets.SIFTALPHA_DEBUG_STORE_PASSWORD }}
+          SIFTALPHA_DEBUG_KEY_ALIAS: ${{ secrets.SIFTALPHA_DEBUG_KEY_ALIAS }}
+          SIFTALPHA_DEBUG_KEY_PASSWORD: ${{ secrets.SIFTALPHA_DEBUG_KEY_PASSWORD }}
+        run: gradle --no-daemon :app:assembleRelease
+
+      - name: Verify signer and package
+        shell: bash
+        run: |
+          set -euo pipefail
+          apk="app/build/outputs/apk/release/app-release.apk"
+          sdk="${ANDROID_SDK_ROOT:-${ANDROID_HOME}}"
+          apksigner="$sdk/build-tools/36.0.0/apksigner"
+          aapt="$sdk/build-tools/36.0.0/aapt"
+
+          actual=$("$apksigner" verify --print-certs "$apk" | awk '/certificate SHA-256 digest/ {print tolower($NF); exit}' | tr -d ':')
+          test "$actual" = "$EXPECTED_CERT_SHA256"
+
+          package_line=$("$aapt" dump badging "$apk" | grep '^package:')
+          echo "$package_line" | grep -F "name='com.siftalpha.studio'"
+
+      - name: Upload release APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SiftAlpha-Studio-release-${{ github.ref_name }}
+          path: app/build/outputs/apk/release/app-release.apk
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          apk="app/build/outputs/apk/release/app-release.apk"
+          asset="SiftAlpha-Studio-$TAG.apk"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$apk#$asset" --clobber
+          else
+            gh release create "$TAG" "$apk#$asset" --title "$TAG" --generate-notes
+          fi
+
+      - name: Remove temporary signing keystore
+        if: always()
+        shell: bash
+        run: |
+          set -eu
+          test -n "${SIFTALPHA_DEBUG_KEYSTORE_FILE:-}" || exit 0
+          rm -f -- "$SIFTALPHA_DEBUG_KEYSTORE_FILE"

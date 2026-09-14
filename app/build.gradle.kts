@@ -19,7 +19,6 @@ val trustedKeystoreFile = providers.gradleProperty("siftalphaDebugKeystoreFile")
     .orElse(providers.environmentVariable("SIFTALPHA_DEBUG_KEYSTORE_FILE"))
     .orNull
 val trustedSigningEnabled = listOf(
-    trustedKeystorePayload,
     trustedStorePassword,
     trustedKeyAlias,
     trustedKeyPassword,
@@ -53,6 +52,11 @@ android {
 
     buildTypes {
         getByName("debug") {
+            if (trustedSigningEnabled) {
+                signingConfig = signingConfigs.getByName("siftalphaTrustedDebug")
+            }
+        }
+        getByName("release") {
             if (trustedSigningEnabled) {
                 signingConfig = signingConfigs.getByName("siftalphaTrustedDebug")
             }
