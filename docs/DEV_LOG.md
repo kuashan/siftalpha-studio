@@ -17,7 +17,7 @@ changes, validation evidence, artifact information, device acceptance, and next 
   unmerged（开放且未合并）.
 - Candidate（候选版本）: 0.8.0-alpha12, Android versionCode 88, application id（应用标识）
   com.siftalpha.studio.
-- Code candidate commit（代码候选提交）: f7466e370bbfe915de98f5adb9726581bd2d8010.
+- Code candidate commit（代码候选提交）: b6135d705441b8b3149f4249defe39e6e801a72f.
 - Scope（范围）: project-scoped lifecycle resolution（项目级生命周期解析）, foreground status
   recovery（前台状态恢复）, failure-reason persistence（失败原因持久化）, duplicate-start
   protection（重复启动保护）, runtime-discovery persistence（运行配置发现持久化）, and
@@ -32,8 +32,9 @@ changes, validation evidence, artifact information, device acceptance, and next 
   documentation time. No local Gradle/JDK/Android SDK（本地 Gradle/JDK/Android SDK） was used.
 - Trigger observation（触发观察）: the branch synchronization event is still pending; historical green
   runs are not accepted as W2 evidence.
-- Trusted Signed Debug APK（稳定签名调试包）: NOT REQUESTED（未请求） until all three checks
-  pass on this exact commit.
+- Trusted Signed Debug APK（稳定签名调试包）: NOT PRODUCED（未生成）. The exact /stable-debug
+  comment was accepted, but candidate run 34832205686 FAILED（失败） because all three same-commit
+  public checks were missing; the signing job was skipped.
 - Device acceptance（真机验收）: NOT TESTED（未测试）. Green CI（绿色持续集成） is not device
   acceptance.
 - Next action（下一步）: run Android Debug APK（普通调试 APK）、Exact Head Unit（精确头部单元）、
