@@ -2,7 +2,7 @@
 
 SiftAlpha Studio is an Android workspace for managing, editing, preparing, and running Python projects and local automation services. It brings project files, runtime state, dependency preparation, logs, and recovery actions into one mobile-first workflow.
 
-The current public snapshot is **v0.7.0-alpha15** (`versionCode 77`). The Android application id is `com.siftalpha.studio`.
+The current public candidate is **v0.8.0-alpha8** (`versionCode 84`). The Android application id is `com.siftalpha.studio`.
 
 ## Current capabilities
 
@@ -14,7 +14,7 @@ The current public snapshot is **v0.7.0-alpha15** (`versionCode 77`). The Androi
 - Runtime storage visibility and cleanup safeguards
 - English, Simplified Chinese, Traditional Chinese, Japanese, and Korean resources
 
-The alpha15 snapshot is an active development release. Automated checks are part of the public baseline; real-device and real-user acceptance should be evaluated separately for each change.
+The alpha8 candidate is an active development release. Automated checks are part of the public baseline; real-device and real-user acceptance should be evaluated separately for each change.
 
 ## Android and runtime requirements
 
@@ -22,16 +22,21 @@ The build targets Android API 36, uses JDK 17, Gradle 9.3.1, Android Gradle Plug
 
 Runtime execution uses a user-installed Termux environment through the public `RUN_COMMAND` contract, with `proot-distro` and an Ubuntu environment providing Python, pip, Git, tmux, and project-specific tools. Termux must allow external app commands. Project source remains in Android shared storage; runtime state and credentials stay in the runtime environment.
 
-## Build locally
+## Cloud-only build policy
 
-Install JDK 17, Android SDK platform/API 36, Build Tools 36.0.0, and Gradle 9.3.1. From the repository root run:
+This public repository intentionally uses GitHub Actions as the supported build and test
+environment. A local Gradle, JDK, Android Studio, or Android SDK installation is not required for
+the project workflow. Each cloud runner provisions the pinned JDK 17, Android SDK/API 36,
+Build Tools 36.0.0, and Gradle 9.3.1 versions for the duration of the job, then discards the
+temporary environment.
 
-```text
-gradle --no-daemon :app:testDebugUnitTest
-gradle --no-daemon :app:assembleDebug
-```
+Every installable update must increase Android `versionCode` over the previous `main` build and
+update `versionName` to match the candidate. GitHub Actions checks this on pull requests.
 
-`assembleDebug` also runs the JVM unit suite. The resulting APK is `app/build/outputs/apk/debug/app-debug.apk`.
+The Android application id and signing certificate also matter for upgrade-in-place. The
+post-merge Trusted Signed Debug artifact is the package intended to overwrite an existing trusted
+development install without clearing app data. A public pull-request Debug artifact is for CI and
+device testing and may have a different debug signer.
 
 ## GitHub Actions artifacts
 
