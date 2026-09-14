@@ -5,7 +5,7 @@ Date（日期）: 2026-09-14
 Branch/PR（分支/合并请求）: codex/w1c-config-wizard, PR #5, Draft（草稿）  
 Candidate（候选版本）: 0.8.0-alpha12, versionCode 88  
 Application id（应用标识）: com.siftalpha.studio  
-Code candidate commit（代码候选提交）: b6135d705441b8b3149f4249defe39e6e801a72f
+Code candidate commit（代码候选提交）: 00ee9cbe1af5590d4296adf07eaa472bbd4e5a8c
 
 ## Goal（目标）
 
@@ -24,6 +24,10 @@ configuration, rerun, stop, failure, and app reopen transitions（准备、检�
   command（状态命令） first.
 - Added a bounded redacted failure reason（有界脱敏失败原因） and renders it in the project card.
   Output panels and error dialogs redact configured protected values before display.
+- Hardened callback gaps（加固回调间隙）: STARTING/PREPARING（启动中/准备中） are persisted before
+  the Termux callback（Termux 回调） arrives, and preparation progress tails are redacted before
+  parsing/rendering（解析/渲染前脱敏）; if protected storage is unavailable, the free-form tail is
+  omitted rather than displayed raw.
 - Added a side-effect boundary（副作用边界） that rejects START（启动） when the environment is not
   ready, a project is active, recovery is pending, or runtime discovery reports missing required
   configuration（必要配置）.
