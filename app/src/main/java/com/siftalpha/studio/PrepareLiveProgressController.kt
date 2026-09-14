@@ -6,6 +6,7 @@ import android.os.Looper
 import com.siftalpha.studio.project.V04ProjectGateway
 import com.siftalpha.studio.runtime.PrepareProgressProbe
 import com.siftalpha.studio.runtime.ProjectRuntimeController
+import com.siftalpha.studio.runtime.ProjectSecretStore
 import com.siftalpha.studio.runtime.RuntimeResult
 import com.siftalpha.studio.runtime.TermuxBackend
 import com.siftalpha.studio.runtime.TermuxResultBus
@@ -25,6 +26,7 @@ class PrepareLiveProgressController(
     private val render: (folderName: String, text: String) -> Unit,
 ) {
     private val handler = Handler(Looper.getMainLooper())
+    private val secretStore = ProjectSecretStore(context)
     private val activeMainExecutions = mutableMapOf<String, Int>()
     private val inFlightByFolder = mutableMapOf<String, Int>()
     private val probeFolderByExecution = mutableMapOf<Int, String>()
@@ -62,12 +64,26 @@ class PrepareLiveProgressController(
         inFlightByFolder.remove(folderName)
 
         if (activeMainExecutions.containsKey(folderName)) {
-            val snapshot = PrepareProgressProbe.parse(result.stdout)
+            val snapshot = PrepareProgressProbe.parse(redactProbeOutput(folderName, result.stdout))
             if (snapshot != null) render(folderName, format(folderName, snapshot))
             if (resumed) schedule(folderName, POLL_INTERVAL_MS)
         }
         return true
     }
+
+    /**
+     * Preparation logs are rendered in the project output panel. Redact configured values before
+     * parsing so copied or displayed progress text cannot expose a protected credential. If the
+     * protected store cannot be read, keep only protocol markers and omit the free-form log tail.
+     */
+    private fun redactProbeOutput(folderName: String, stdout: String): String =
+        runCatching { secretStore.redactRuntimeText(folderName, stdout) }
+            .getOrElse {
+                stdout.lineSequence()
+                    .map { it.trimEnd() }
+                    .filter { it.startsWith("SIFTALPHA_PREPARE_") }
+                    .joinToString("\\n")
+            }
 
     private fun schedule(folderName: String, delayMs: Long) {
         if (!resumed || !activeMainExecutions.containsKey(folderName)) return
