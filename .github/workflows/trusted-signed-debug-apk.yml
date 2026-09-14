@@ -40,6 +40,9 @@ jobs:
           yes | sdkmanager --licenses >/dev/null || true
           sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0"
 
+      - name: Validate launcher icon resource chain
+        run: python3 tools/validate_launcher_icon.py
+
       - name: Set up Gradle 9.3.1
         uses: gradle/actions/setup-gradle@v4
         with:

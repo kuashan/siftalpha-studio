@@ -30,3 +30,6 @@ jobs:
 
       - name: Validate localized UI sources
         run: python3 tools/validate_localized_ui_sources.py
+
+      - name: Validate launcher icon resource chain
+        run: python3 tools/validate_launcher_icon.py
