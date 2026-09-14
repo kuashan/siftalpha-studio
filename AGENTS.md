@@ -32,11 +32,16 @@ current code, the current pull request, or the latest development log.
   normal validation.
 - Every installable update must increase Android `versionCode`（版本代码）, keep the application
   id unchanged, and update `versionName`（版本名称） consistently.
-- Each meaningful feature first produces an ordinary Debug APK（调试测试包） for the user's real
-  device acceptance（真机验收）.
-- A pull-request Debug APK uses ordinary CI signing（持续集成签名） and may not upgrade over a
-  trusted-signed installation. The Trusted Signed Debug APK（正式签名调试包） path is reserved
-  for the protected `main` workflow（主分支流程）.
+- Each meaningful feature first produces a Trusted Signed Debug APK（稳定签名调试包） for the
+  user's real device acceptance（真机验收） and upgrade-in-place（覆盖安装） testing.
+- An ordinary public pull-request Debug APK（普通公开调试包） uses ordinary CI signing（持续集成
+  签名）. It is valid for cloud checks and fresh-install testing only; it must not be presented as
+  the default upgradeable device package.
+- Stable-signed candidate packages must be created inside a protected signing boundary（受保护的签名
+  边界）. Never expose signing secrets to untrusted pull-request code or its build/test steps. The
+  current Trusted Signed Debug APK（稳定签名调试包） workflow is still limited to protected
+  `main`/legacy-branch builds, so an isolated protected candidate-signing workflow is required before
+  an unmerged PR candidate can be called upgradeable.
 - Do not claim device acceptance from CI alone. Record the user's actual result as `PASS`, `FAIL`,
   or `NOT TESTED`.
 - Keep the active feature PR Draft（草稿） while several features are being device-tested. Do not

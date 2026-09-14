@@ -61,7 +61,8 @@ containing `app-debug.apk`.
 - Signing（签名）: ordinary public Debug signing（普通公开调试签名）, not Trusted Signed（不是
   正式受信签名）.
 - Device acceptance（真机验收）: `PENDING`（待验收） as of this update. Do not mark W1C as
-  accepted until the user reports the result.
+  accepted until the user reports the result. This ordinary package is not an upgrade path for the
+  stable-signed installation.
 
 ## Confirmed user requirements（已确认的用户要求）
 
@@ -71,9 +72,20 @@ containing `app-debug.apk`.
 - Keep the repository Public to retain free cloud build access.
 - Increment `versionCode` for every installable update so Android accepts the upgrade path.
 - Keep the package name and stable signing lineage unchanged for trusted upgrade-in-place（覆盖安装）.
-- Provide an ordinary Debug APK for every feature acceptance pass before discussing a formal package.
+- The default device-acceptance artifact for every feature pass is a Trusted Signed Debug APK
+  （稳定签名调试包）, so the user can test and upgrade in place without repeatedly uninstalling the
+  app.
+- An ordinary public pull-request Debug APK（普通公开调试包） is only for cloud checks and
+  fresh-install testing. It must not be described as upgradeable.
+- An unmerged candidate requires an isolated protected candidate-signing workflow（受保护的候选版本
+  签名流程） that signs the exact public-validated commit. Signing secrets must never be exposed to
+  untrusted pull-request code.
 - The post-merge Trusted Signed Debug workflow produces the package intended to overwrite an existing
   trusted development install without uninstalling or clearing data.
+- One-time migration（一次性迁移）: because alpha10 was built with an ordinary public Debug signer,
+  the user may need to uninstall the currently installed ordinary package before installing the first
+  stable-signed test package. From that stable-signed baseline onward, later candidates must keep the
+  same signer and increase `versionCode` so Android can accept in-place updates.
 
 ### Acceptance and PR workflow
 
@@ -118,13 +130,15 @@ runtime payload. Never write them to source files, `.env`, logs, GitHub, or this
 - [Launcher icon repair（启动图标修复）](DEV_NOTES/W1A_ALPHA7_ICON_REPAIR_2026-09-14.md)
 - [UI foundation（界面基础）](DEV_NOTES/V0_8_W1A_UI_FOUNDATION_2026-09-13.md)
 - [Stable signing and upgrade continuity（稳定签名与覆盖安装连续性）](DEV_NOTES/STABLE_SIGNING_UPGRADE_CONTINUITY_2026-09-13.md)
+- [Stable-signed device test package（稳定签名设备测试包流程）](WORKFLOWS/STABLE_SIGNED_DEVICE_TEST_PACKAGE.md)
 - [Post-merge official validation package（合并后正式验证包）](WORKFLOWS/POST_MERGE_OFFICIAL_VALIDATION_PACKAGE.md)
 - [Public repository and source policy（公开仓库与源代码政策）](WORKFLOWS/PUBLIC_SOURCE_ALL_RIGHTS_RESERVED_2026-09-13.md)
 
 ## Current next action（当前下一步）
 
-The alpha10 ordinary Debug APK is ready to install on the authorized device. Test the configuration
-button before and after preparation, the Run detection pass, the required/optional split, optional
-skipping, and the automatic post-configuration rerun. After the user's result is reported, append
-it to `docs/DEV_LOG.md`, update the status in this file, and then either continue the next feature
+Before the next device-acceptance pass, provide a Trusted Signed Debug APK（稳定签名调试包） from
+an isolated protected candidate-signing workflow. The alpha10 ordinary Debug APK remains a historical
+non-upgradeable test artifact and its W1C device acceptance is still `PENDING`. After the first
+stable-signed package is installed (with a one-time uninstall if Android reports a signer mismatch),
+record the user's configuration-flow result in `docs/DEV_LOG.md`; then continue the next feature
 slice or prepare the accepted batch for merge.

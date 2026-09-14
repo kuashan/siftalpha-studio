@@ -80,15 +80,41 @@ changes, validation evidence, artifact information, device acceptance, and next 
 
 ## 2026-09-14 — Test-package-first workflow（先测试包流程）
 
-- Decision: every feature update is delivered first as an ordinary Debug APK for real-device
-  testing. The user may uninstall the previous formal/trusted installation when the ordinary Debug
-  signer differs.
+- Historical decision: every feature update is delivered first as a test package for real-device
+  testing. The package type was later superseded by the stable-signed device-test decision below;
+  the test-first and user-acceptance gates remain active.
 - Decision: a single Draft PR may carry multiple features while the user tests them; do not merge
   or produce a formal release package automatically after each individual test package.
 - Decision: keep the repository Public because the project intentionally uses free GitHub Actions
   cloud builds.
 - Related records: [POST_MERGE_OFFICIAL_VALIDATION_PACKAGE.md](WORKFLOWS/POST_MERGE_OFFICIAL_VALIDATION_PACKAGE.md)
   and [STABLE_SIGNING_UPGRADE_CONTINUITY_2026-09-13.md](DEV_NOTES/STABLE_SIGNING_UPGRADE_CONTINUITY_2026-09-13.md).
+
+## 2026-09-14 — Stable-signed device test package required（稳定签名设备测试包要求）
+
+- User decision: from the next device-acceptance candidate onward, the default test package must be
+  a Trusted Signed Debug APK（稳定签名调试包）. It must use the stable development certificate so
+  the user can install updates over the existing stable-signed app without repeatedly uninstalling.
+- Reason: alpha10 was an ordinary public Debug APK（普通公开调试包）. Its cloud-run signer can
+  differ from the signer of the previously installed package, which caused Android's signature
+  mismatch and blocked upgrade-in-place（覆盖安装）.
+- Ordinary public pull-request Debug artifacts remain available for fork-safe CI（分支安全持续集成）
+  and fresh-install checks, but they are not upgradeable device packages and must not be presented
+  as such.
+- Security boundary: a protected candidate-signing workflow（受保护的候选版本签名流程） must sign
+  the exact public-validated commit. Signing secrets may be used only in the isolated signer and may
+  never be exposed to untrusted pull-request build/test steps. The current trusted workflow is
+  limited to protected `main`/legacy-branch builds, so this candidate-signing path remains the next
+  workflow implementation item.
+- One-time migration: if the device still has an ordinary alpha10/previous package installed, the
+  user may need to uninstall it once before installing the first stable-signed test package. After
+  that baseline, every installable candidate must retain `com.siftalpha.studio`, use a higher
+  `versionCode`, and keep the stable signer.
+- Current scope: this is a documentation and workflow-policy update for PR #5, candidate alpha10;
+  no code version bump or new APK was produced by this record-only change. Alpha10 device acceptance
+  remains `PENDING`.
+- Next action: establish the protected candidate-signing path, then provide the stable-signed alpha10
+  candidate for the user's real-device acceptance before deciding whether to merge.
 
 ## 2026-09-13 — Stable signing and upgrade continuity（稳定签名与覆盖安装连续性）
 

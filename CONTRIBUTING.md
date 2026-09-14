@@ -23,7 +23,9 @@ Unsolicited code pull requests and code contributions are not accepted. Submit a
 
 4. Use the GitHub Actions checks as the build environment. A local Gradle/JDK/Android SDK setup is
    not required; review the Android Debug APK, Exact Head Unit, and Localization results on the
-   pull request and use the cloud artifact for device testing.
+   pull request. For real-device acceptance, use the protected Trusted Signed Debug APK（稳定签名
+   调试包） when upgrade-in-place testing is required. The ordinary public pull-request APK is
+   limited to CI and fresh-install testing because it may have a different signer.
 
 5. Run `git diff --check` and describe any real-device Runtime or Termux/PRoot regression coverage in the pull request.
 
