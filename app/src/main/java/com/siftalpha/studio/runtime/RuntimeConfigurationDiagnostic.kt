@@ -37,6 +37,12 @@ object RuntimeConfigurationDiagnostic {
         Regex(
             "(?i)(?:missing|required)\\s+(?:configuration|credential)\\s*[:=]?\\s*[`'\"]?([A-Z_][A-Z0-9_]*)",
         ),
+        // Python's os.environ["NAME"] commonly surfaces as KeyError: "NAME". Restrict this
+        // fallback to credential-shaped names so ordinary dictionary KeyError messages are not
+        // turned into configuration prompts.
+        Regex(
+            "(?i)KeyError\\s*:\\s*[`'\"]?([A-Z_][A-Z0-9_]*(?:API_KEY|API_SECRET|TOKEN|SECRET|PASSWORD|CREDENTIALS?))[`'\"]?",
+        ),
     )
 
     private val genericCredentialPatterns = listOf(

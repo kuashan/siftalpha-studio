@@ -48,7 +48,7 @@
     <string name="runtime_policy_environment_prepare_required">実行環境が準備されていません。先に準備してください。</string>
     <string name="runtime_policy_environment_status_required">実行環境の状態が不明です。先に状態を確認してください。</string>
     <string name="runtime_policy_runtime_status_required">ランタイムの状態が不明です。先に状態を確認してください。</string>
-    <string name="runtime_policy_ready_to_run">実行環境、設定、ライフサイクル状態が起動条件を満たしています。</string>
+    <string name="runtime_policy_ready_to_run">実行環境の準備が完了し、プロジェクトを起動できます。設定が必要な場合は起動後に Studio が案内します。</string>
     <string name="runtime_policy_reason_pending_operation">別の操作が実行中です</string>
     <string name="runtime_policy_reason_runtime_host_unavailable">この端末ではランタイムを実行できません</string>
     <string name="runtime_policy_reason_runtime_selection_required">プロジェクトのランタイムを一意に特定できません</string>

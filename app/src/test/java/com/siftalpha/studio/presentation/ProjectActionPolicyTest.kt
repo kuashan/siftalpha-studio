@@ -71,7 +71,7 @@ class ProjectActionPolicyTest {
     }
 
     @Test
-    fun `unknown lifecycle cannot optimistically start`() {
+    fun `prepared environment allows the first run before lifecycle status is known`() {
         val policy = ProjectActionPolicy.resolve(
             snapshot(
                 lifecycle = RuntimeState.UNKNOWN,
@@ -79,19 +79,67 @@ class ProjectActionPolicyTest {
             ),
         )
 
-        assertEquals(ProjectActionPolicy.Action.STATUS, policy.primaryAction)
-        assertFalse(policy.isEnabled(ProjectActionPolicy.Action.START))
-        assertEquals(
-            ProjectActionPolicy.DisableReason.UNKNOWN_RUNTIME_STATE,
-            policy.reasonFor(ProjectActionPolicy.Action.START),
-        )
+        assertEquals(ProjectActionPolicy.Action.START, policy.primaryAction)
+        assertTrue(policy.isEnabled(ProjectActionPolicy.Action.START))
+        assertTrue(policy.isEnabled(ProjectActionPolicy.Action.CONFIGURE))
     }
 
     @Test
-    fun `environment ready does not hide missing required configuration`() {
+    fun `configuration stays available before environment preparation`() {
         val policy = ProjectActionPolicy.resolve(
             snapshot(
-                lifecycle = RuntimeState.STOPPED_BY_USER,
+                lifecycle = RuntimeState.UNKNOWN,
+                environment = ProjectUiSnapshot.Environment(ProjectUiSnapshot.Readiness.NOT_READY),
+            ),
+        )
+
+        assertEquals(ProjectActionPolicy.Action.PREPARE, policy.primaryAction)
+        assertFalse(policy.isEnabled(ProjectActionPolicy.Action.START))
+        assertTrue(policy.isEnabled(ProjectActionPolicy.Action.CONFIGURE))
+    }
+
+    @Test
+    fun `configuration stays available when runtime selection is unresolved`() {
+        val policy = ProjectActionPolicy.resolve(
+            snapshot(
+                runtime = ProjectUiSnapshot.Runtime(
+                    selection = ProjectUiSnapshot.Runtime.Selection(
+                        status = ProjectUiSnapshot.Runtime.SelectionStatus.AMBIGUOUS,
+                        candidates = listOf(RuntimeKind.PYTHON, RuntimeKind.NODE_JS),
+                    ),
+                    supported = true,
+                ),
+                environment = ProjectUiSnapshot.Environment(ProjectUiSnapshot.Readiness.NOT_READY),
+            ),
+        )
+
+        assertFalse(policy.isEnabled(ProjectActionPolicy.Action.START))
+        assertTrue(policy.isEnabled(ProjectActionPolicy.Action.CONFIGURE))
+    }
+
+    @Test
+    fun `configuration stays available when runtime host is unavailable`() {
+        val policy = ProjectActionPolicy.resolve(
+            snapshot(
+                runtime = ProjectUiSnapshot.Runtime(
+                    selection = ProjectUiSnapshot.Runtime.Selection(
+                        status = ProjectUiSnapshot.Runtime.SelectionStatus.RESOLVED,
+                        primary = RuntimeKind.PYTHON,
+                    ),
+                    supported = false,
+                ),
+            ),
+        )
+
+        assertFalse(policy.isEnabled(ProjectActionPolicy.Action.START))
+        assertTrue(policy.isEnabled(ProjectActionPolicy.Action.CONFIGURE))
+    }
+
+    @Test
+    fun `static missing configuration does not block the first run`() {
+        val policy = ProjectActionPolicy.resolve(
+            snapshot(
+                lifecycle = RuntimeState.UNKNOWN,
                 environment = ProjectUiSnapshot.Environment(ProjectUiSnapshot.Readiness.READY),
                 configuration = ProjectUiSnapshot.Configuration(
                     requiredCount = 2,
@@ -101,9 +149,10 @@ class ProjectActionPolicyTest {
             ),
         )
 
-        assertEquals(ProjectActionPolicy.Action.CONFIGURE, policy.primaryAction)
-        assertFalse(policy.isEnabled(ProjectActionPolicy.Action.START))
-        assertEquals(ProjectActionPolicy.DetailEntry.CONFIGURATION, policy.detailEntry)
+        assertEquals(ProjectActionPolicy.Action.START, policy.primaryAction)
+        assertTrue(policy.isEnabled(ProjectActionPolicy.Action.START))
+        assertTrue(policy.isEnabled(ProjectActionPolicy.Action.CONFIGURE))
+        assertEquals(ProjectActionPolicy.DetailEntry.RUNTIME, policy.detailEntry)
     }
 
     @Test
@@ -122,11 +171,32 @@ class ProjectActionPolicyTest {
 
         assertEquals(ProjectActionPolicy.Action.START, policy.primaryAction)
         assertTrue(policy.isEnabled(ProjectActionPolicy.Action.START))
+        assertTrue(policy.isEnabled(ProjectActionPolicy.Action.CONFIGURE))
         assertTrue(snapshot(
             lifecycle = RuntimeState.STOPPED_BY_USER,
             environment = ProjectUiSnapshot.Environment(ProjectUiSnapshot.Readiness.READY),
             configuration = ProjectUiSnapshot.Configuration(0, 0, credentialCandidateCount = 2),
         ).configuration.hasOnlyOptionalCandidates)
+    }
+
+    @Test
+    fun `runtime discovery enables configuration without blocking a retry`() {
+        val policy = ProjectActionPolicy.resolve(
+            snapshot(
+                lifecycle = RuntimeState.EXITED_ERROR,
+                environment = ProjectUiSnapshot.Environment(ProjectUiSnapshot.Readiness.READY),
+                configuration = ProjectUiSnapshot.Configuration(
+                    requiredCount = 1,
+                    configuredRequiredCount = 0,
+                    missingRequiredNames = listOf("SERVICE_TOKEN"),
+                    runtimeConfigurationDiscovered = true,
+                ),
+            ),
+        )
+
+        assertEquals(ProjectActionPolicy.Action.START, policy.primaryAction)
+        assertTrue(policy.isEnabled(ProjectActionPolicy.Action.START))
+        assertTrue(policy.isEnabled(ProjectActionPolicy.Action.CONFIGURE))
     }
 
     @Test
@@ -149,6 +219,7 @@ class ProjectActionPolicyTest {
 
         assertEquals(ProjectActionPolicy.Action.STOP, policy.primaryAction)
         assertTrue(policy.isEnabled(ProjectActionPolicy.Action.STOP))
+        assertTrue(policy.isEnabled(ProjectActionPolicy.Action.CONFIGURE))
         assertEquals(ProjectActionPolicy.DisableReason.PROCESS_ACTIVE, policy.reasonFor(ProjectActionPolicy.Action.START))
     }
 
@@ -171,6 +242,7 @@ class ProjectActionPolicyTest {
             ProjectActionPolicy.Action.STATUS,
             ProjectActionPolicy.Action.LOGS,
             ProjectActionPolicy.Action.CLEAN,
+            ProjectActionPolicy.Action.CONFIGURE,
         ).forEach { action ->
             assertFalse("$action should be disabled", policy.isEnabled(action))
             assertEquals(ProjectActionPolicy.DisableReason.PENDING_OPERATION, policy.reasonFor(action))

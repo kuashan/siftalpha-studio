@@ -35,6 +35,23 @@ The certificate fingerprint is public verification metadata. The keystore, priva
 
 Gradle enables the trusted debug signing configuration only when all four protected signing inputs and the runner-temporary keystore path are present. With no trusted inputs, local and ordinary CI builds continue to use normal debug signing.
 
+## Current device-acceptance policy
+
+The user confirmed on 2026-09-14 that the default package for every future real-device feature
+acceptance pass must be the Trusted Signed Debug APK（稳定签名调试包）, including upgrade-in-place
+testing. The ordinary public Debug APK（普通公开调试包） remains a fork-safe CI（分支安全持续集成）
+and fresh-install artifact only; it is not a substitute when an installed package must be upgraded.
+
+The protected candidate workflow now signs an unmerged feature candidate after the repository owner
+posts exactly `/stable-debug` on its PR. It locates the successful public APK for the exact PR head,
+verifies the public checks and artifact, and signs the APK in an isolated protected job. It does not
+check out or execute pull-request source while signing secrets are available. An ordinary
+pull-request artifact remains non-upgradeable until this step completes.
+
+Because alpha10 was built with ordinary public Debug signing, the first stable-signed device package
+may require a one-time uninstall before installation. Later candidates must retain the stable signer,
+the application id, and a higher `versionCode` so Android can update in place.
+
 ## Protected secret names
 
 Only these GitHub Actions Secret names are used; no values belong in source or logs:

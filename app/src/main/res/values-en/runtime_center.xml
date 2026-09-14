@@ -48,7 +48,7 @@
     <string name="runtime_policy_environment_prepare_required">The runtime environment is not prepared. Prepare it first.</string>
     <string name="runtime_policy_environment_status_required">The runtime environment state is unknown. Check status first.</string>
     <string name="runtime_policy_runtime_status_required">The runtime state is unknown. Check status first.</string>
-    <string name="runtime_policy_ready_to_run">The runtime environment, configuration, and lifecycle state are ready to start.</string>
+    <string name="runtime_policy_ready_to_run">The runtime environment is prepared and the project can start; Studio will prompt after launch if configuration is needed.</string>
     <string name="runtime_policy_reason_pending_operation">another operation is already running</string>
     <string name="runtime_policy_reason_runtime_host_unavailable">runtime execution is unavailable on this device</string>
     <string name="runtime_policy_reason_runtime_selection_required">the project runtime is not uniquely determined</string>

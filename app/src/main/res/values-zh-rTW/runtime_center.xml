@@ -48,7 +48,7 @@
     <string name="runtime_policy_environment_prepare_required">執行環境尚未準備，請先準備環境。</string>
     <string name="runtime_policy_environment_status_required">執行環境狀態未知，請先檢查狀態。</string>
     <string name="runtime_policy_runtime_status_required">執行狀態未知，請先檢查狀態。</string>
-    <string name="runtime_policy_ready_to_run">執行環境、設定與執行狀態都已符合啟動條件。</string>
+    <string name="runtime_policy_ready_to_run">執行環境已準備完成，可以啟動專案；如果需要設定，Studio 會在執行後提示。</string>
     <string name="runtime_policy_reason_pending_operation">已有操作正在執行</string>
     <string name="runtime_policy_reason_runtime_host_unavailable">此裝置不支援執行環境</string>
     <string name="runtime_policy_reason_runtime_selection_required">無法唯一判定專案執行環境</string>

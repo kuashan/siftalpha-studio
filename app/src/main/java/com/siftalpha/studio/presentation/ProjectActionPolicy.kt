@@ -112,6 +112,9 @@ object ProjectActionPolicy {
     fun resolve(snapshot: ProjectUiSnapshot): Result {
         val actions = linkedMapOf<Action, ActionDecision>()
         actions[Action.EDIT] = enabled()
+        // Configuration is a project-level operation, not a runtime-discovery result. It remains
+        // available before and after environment preparation so the user can review or enter
+        // optional values proactively. The Run action is still responsible for runtime detection.
         actions[Action.CONFIGURE] = enabled()
         actions[Action.OPEN_SOURCE] = if (snapshot.identity.sourceUrl.isNullOrBlank()) {
             disabled(DisableReason.SOURCE_NOT_AVAILABLE)
@@ -134,7 +137,7 @@ object ProjectActionPolicy {
                 actions = actions,
                 summary = MessageKey.RUNTIME_HOST_UNAVAILABLE,
                 primaryAction = null,
-                directSecondaryAction = Action.CONFIGURE,
+                directSecondaryAction = null,
                 disableReason = DisableReason.RUNTIME_HOST_UNAVAILABLE,
                 detailEntry = DetailEntry.RUNTIME,
             )
@@ -142,6 +145,7 @@ object ProjectActionPolicy {
 
         if (snapshot.pending != null) {
             runtimeActions.forEach { actions[it] = disabled(DisableReason.PENDING_OPERATION) }
+            actions[Action.CONFIGURE] = disabled(DisableReason.PENDING_OPERATION)
             actions[Action.OPEN_BROWSER] = disabled(DisableReason.PENDING_OPERATION)
             return result(
                 actions = actions,
@@ -210,18 +214,6 @@ object ProjectActionPolicy {
                     disableReason = selectionReason
                     detailEntry = DetailEntry.RUNTIME
                 }
-                snapshot.configuration.missingRequiredCount > 0 -> {
-                    actions[Action.START] = disabled(DisableReason.REQUIRED_CONFIGURATION_MISSING)
-                    primaryAction = Action.CONFIGURE
-                    secondaryAction = if (snapshot.environment.readiness == ProjectUiSnapshot.Readiness.NOT_READY) {
-                        Action.PREPARE
-                    } else {
-                        Action.STATUS
-                    }
-                    message = MessageKey.CONFIGURATION_REQUIRED
-                    disableReason = DisableReason.REQUIRED_CONFIGURATION_MISSING
-                    detailEntry = DetailEntry.CONFIGURATION
-                }
                 snapshot.environment.readiness == ProjectUiSnapshot.Readiness.NOT_READY -> {
                     actions[Action.START] = disabled(DisableReason.ENVIRONMENT_NOT_READY)
                     primaryAction = Action.PREPARE
@@ -237,15 +229,6 @@ object ProjectActionPolicy {
                     message = MessageKey.ENVIRONMENT_STATUS_REQUIRED
                     disableReason = DisableReason.ENVIRONMENT_UNKNOWN
                     detailEntry = DetailEntry.ENVIRONMENT
-                }
-                snapshot.lifecycle == RuntimeState.UNKNOWN ||
-                    snapshot.evidence.lifecycle == ProjectUiSnapshot.LifecycleEvidence.NONE -> {
-                    actions[Action.START] = disabled(DisableReason.UNKNOWN_RUNTIME_STATE)
-                    primaryAction = Action.STATUS
-                    secondaryAction = Action.PREPARE
-                    message = MessageKey.RUNTIME_STATUS_REQUIRED
-                    disableReason = DisableReason.UNKNOWN_RUNTIME_STATE
-                    detailEntry = DetailEntry.RUNTIME
                 }
                 else -> {
                     primaryAction = Action.START

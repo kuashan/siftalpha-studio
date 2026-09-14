@@ -5,9 +5,15 @@
 
 ## Rule
 
-A merge into `main` is also a formal validation-package event. After every successful merge, the project workflow must produce and provide the current `main` build as a directly installable APK.
+A merge into `main` is also a formal validation-package event. After every successful merge, the
+project workflow must produce and provide the current `main` build as a directly installable APK.
 
-The package must come from the `Trusted Signed Debug APK` workflow run triggered by the merged `main` commit. A pull-request Debug APK is not a substitute for this package.
+The package must come from the `Trusted Signed Debug APK` workflow run triggered by the merged `main`
+commit. A pull-request Debug APK is not a substitute for this package.
+
+Every installable update must also use a monotonically increasing Android `versionCode`. The
+`versionName` should be updated with the same candidate. Upgrade-in-place requires the same package
+name (`com.siftalpha.studio`), a higher `versionCode`, and the stable trusted signing certificate.
 
 ## Required sequence
 
@@ -30,6 +36,7 @@ The package may be presented as the formal validation package only when all of t
 - The trusted workflow completed successfully.
 - The workflow's signer and package checks passed.
 - The package name is `com.siftalpha.studio`.
+- Its `versionCode` is higher than the previously accepted `main` package.
 - The artifact belongs to the merged `main` commit.
 - Launcher icon validation passed.
 - The downloaded artifact digest matches the digest reported by GitHub.
@@ -46,6 +53,10 @@ Keep the original GitHub artifact available for traceability, but provide the ex
 
 ## Existing automation
 
-`.github/workflows/trusted-signed-debug-apk.yml` is the source of truth for this event. Its `push` trigger on `main`, protected signing verification, package/version checks, launcher-icon validation, and artifact upload must remain enabled.
+`.github/workflows/trusted-signed-debug-apk.yml` is the source of truth for this event. Its `push`
+trigger on `main`, protected signing verification, package/version checks, launcher-icon validation,
+and artifact upload must remain enabled.
 
-This rule describes the post-merge delivery procedure; it does not turn the Debug APK into a public production release.
+The PR Android workflow additionally checks that the candidate `versionCode` is greater than the
+current `main` version. This rule describes the post-merge delivery procedure; it does not turn the
+Debug APK into a public production release.

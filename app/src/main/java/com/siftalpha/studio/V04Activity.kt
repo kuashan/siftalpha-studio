@@ -325,6 +325,7 @@ class V04Activity : StudioActivity() {
                 configuredRequiredCount = configurationSnapshot.preflight.configuredRequiredCount,
                 missingRequiredNames = configurationSnapshot.preflight.missingRequired.map { it.name },
                 credentialCandidateCount = configurationSnapshot.allCandidateNames.size,
+                runtimeConfigurationDiscovered = configurationSnapshot.runtimeConfigurationDiscovered,
             ),
             lifecycle = typedState,
             web = web,
@@ -502,7 +503,10 @@ class V04Activity : StudioActivity() {
                     projectName = summary.name,
                     projectDocumentId = summary.documentId,
                     folderName = project.folderName,
+                    onCompleted = { retryProjectAfterConfiguration(project, webProfile) },
                 )
+            }.apply {
+                isEnabled = policy.isEnabled(ProjectActionPolicy.Action.CONFIGURE)
             },
             weight().apply { marginStart = dp(5) },
         )
@@ -699,27 +703,24 @@ class V04Activity : StudioActivity() {
             .show()
     }
 
+    private fun startProject(
+        project: V04ProjectGateway.RuntimeProject,
+        webProfile: WebProjectInspector.Profile? = null,
+    ) {
+        val profile = webProfile ?: runCatching {
+            webInspector.inspect(project.summary.documentId)
+        }.getOrNull()
+        dispatch(
+            project = project,
+            action = ProjectRuntimeController.Action.START,
+            browserConfiguredUrl = profile?.configuredLocalUrl(),
+            browserFramework = profile?.framework,
+        )
+    }
+
     private fun confirmRun(project: V04ProjectGateway.RuntimeProject) {
         if (!ensureRuntime()) return
         val webProfile = runCatching { webInspector.inspect(project.summary.documentId) }.getOrNull()
-        val startAction = {
-            dispatch(
-                project = project,
-                action = ProjectRuntimeController.Action.START,
-                browserConfiguredUrl = webProfile?.configuredLocalUrl(),
-                browserFramework = webProfile?.framework,
-            )
-        }
-
-        if (!configurationUi.ensureRequiredBeforeRun(
-                projectName = project.summary.name,
-                projectDocumentId = project.summary.documentId,
-                folderName = project.folderName,
-                onSavedAndRun = startAction,
-            )
-        ) {
-            return
-        }
 
         val configurationNote = "\n\n${configurationUi.statusText(configurationUi.snapshot(project.summary.documentId, project.folderName))}"
         val webNote = if (webProfile?.enabled == true) {
@@ -731,7 +732,7 @@ class V04Activity : StudioActivity() {
             .setTitle(getString(R.string.runtime_run_title, project.summary.name))
             .setMessage(getString(R.string.runtime_run_message, project.summary.run, configurationNote, webNote))
             .setNegativeButton(getString(R.string.common_cancel), null)
-            .setPositiveButton(getString(R.string.runtime_button_run)) { _, _ -> startAction() }
+            .setPositiveButton(getString(R.string.runtime_button_run)) { _, _ -> startProject(project, webProfile) }
             .show()
     }
 
@@ -851,7 +852,33 @@ class V04Activity : StudioActivity() {
             projectDocumentId = project.summary.documentId,
             folderName = project.folderName,
             output = text,
+            onConfigurationCompleted = { retryProjectAfterConfiguration(project) },
         )
+    }
+
+    private fun retryProjectAfterConfiguration(
+        project: V04ProjectGateway.RuntimeProject,
+        webProfile: WebProjectInspector.Profile? = null,
+    ) {
+        val stateKey = project.summary.documentId
+        // Configuration can be opened before preparation. In that state saving or skipping values
+        // must not issue a doomed runtime command; the normal Prepare -> Run flow remains intact.
+        if (environmentStates[stateKey] != true) return
+        if (pending.values.any { item ->
+                item.documentId == project.summary.documentId ||
+                    (item.documentId == null && item.folderName == project.folderName)
+            }) {
+            return
+        }
+        if (typedStates[stateKey] in setOf(
+                RuntimeState.PREPARING,
+                RuntimeState.STARTING,
+                RuntimeState.RUNNING,
+            )
+        ) {
+            return
+        }
+        startProject(project, webProfile)
     }
 
     private fun handleResult(item: Pending, result: RuntimeResult) {
@@ -994,6 +1021,7 @@ class V04Activity : StudioActivity() {
                 if (success) {
                     typedStates[stateKey] = RuntimeState.UNKNOWN
                     environmentStates[stateKey] = false
+                    configurationUi.clearRuntimeDiscovery(item.folderName)
                 }
                 refresh()
                 if (!success) runtimeError(result)

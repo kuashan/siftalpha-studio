@@ -10,7 +10,8 @@ import android.provider.DocumentsContract
  * Product rules:
  * - `.project.json.requiredEnv` is authoritative for required configuration.
  * - `.env` is inspected only to determine whether a declared value is already configured by the project.
- * - `.env.example` contributes credential candidates for user guidance, never a blocking requirement.
+ * - `.env.example` and optional Python environment reads contribute configuration candidates for
+ *   user guidance, never a blocking requirement.
  * - malformed metadata or Storage Access Framework provider failures must not take down Runtime Center.
  */
 class ProjectConfigurationInspector(context: Context) {
@@ -26,6 +27,7 @@ class ProjectConfigurationInspector(context: Context) {
         val requirements: List<Requirement>,
         val configuredProjectEnvKeys: Set<String>,
         val credentialCandidates: List<String>,
+        val configurationCandidates: List<Requirement> = emptyList(),
     ) {
         val required: List<Requirement>
             get() = requirements.filter { it.required }
@@ -33,6 +35,11 @@ class ProjectConfigurationInspector(context: Context) {
         val declaredNames: Set<String>
             get() = requirements.mapTo(linkedSetOf()) { it.name }
     }
+
+    data class PythonConfiguration(
+        val required: List<Requirement>,
+        val candidates: List<Requirement>,
+    )
 
     private data class Child(
         val id: String,
@@ -57,18 +64,33 @@ class ProjectConfigurationInspector(context: Context) {
             ?.let { readLimitedText(tree, it.id, MAX_ENV_BYTES) }
             .orEmpty()
 
-        val requirements = parseRequiredEnv(metadata)
+        val python = inspectPythonFiles(projectDocumentId)
+        val requirements = mergeRequirements(
+            parseRequiredEnv(metadata),
+            python.required,
+        )
         val configuredKeys = parseConfiguredEnvKeys(env)
-        val credentialCandidates = parseEnvCandidateKeys(envExample)
-            .filter(::looksSensitive)
-            .filterNot { candidate -> requirements.any { it.name == candidate } }
-            .distinct()
-            .sorted()
+        val templateCandidates = parseEnvCandidateKeys(envExample).map { name ->
+            Requirement(
+                name = name,
+                secret = looksSensitive(name),
+                required = false,
+                description = "",
+            )
+        }
+        val configurationCandidates = mergeRequirements(
+            python.candidates,
+            templateCandidates,
+        ).filterNot { candidate -> requirements.any { it.name == candidate.name } }
+        val credentialCandidates = configurationCandidates
+            .filter { it.secret }
+            .map { it.name }
 
         Profile(
             requirements = requirements,
             configuredProjectEnvKeys = configuredKeys,
             credentialCandidates = credentialCandidates,
+            configurationCandidates = configurationCandidates,
         )
     }.getOrElse {
         emptyProfile()
@@ -77,9 +99,85 @@ class ProjectConfigurationInspector(context: Context) {
     companion object {
         private const val MAX_METADATA_BYTES = 128 * 1024
         private const val MAX_ENV_BYTES = 256 * 1024
+        private const val MAX_PYTHON_FILES = 8
         private val ENV_NAME = Regex("^[A-Za-z_][A-Za-z0-9_]*$")
+        private val PYTHON_DIRECT_ENV = Regex(
+            """(?:os\.)?environ\s*\[\s*[\"']([A-Za-z_][A-Za-z0-9_]*)[\"']\s*]""",
+        )
+        private val PYTHON_GET_ENV = Regex(
+            """(?:os\.)?(?:environ\s*\.\s*get|getenv)\s*\(\s*[\"']([A-Za-z_][A-Za-z0-9_]*)[\"']""",
+        )
+        private val IGNORED_PYTHON_ENV_NAMES = setOf(
+            "HOME",
+            "LANG",
+            "PATH",
+            "PWD",
+            "SHELL",
+            "TERM",
+            "TMPDIR",
+            "USER",
+        )
 
-        fun emptyProfile(): Profile = Profile(emptyList(), emptySet(), emptyList())
+        fun emptyProfile(): Profile = Profile(emptyList(), emptySet(), emptyList(), emptyList())
+
+        /**
+         * Finds conventional Python environment-variable reads without executing project code.
+         * Direct indexing is considered required because Python raises when the key is absent;
+         * getenv/get reads remain optional candidates until metadata or runtime preflight confirms
+         * that the project requires them.
+         */
+        fun parsePythonConfiguration(source: String): PythonConfiguration {
+            val required = linkedMapOf<String, Requirement>()
+            PYTHON_DIRECT_ENV.findAll(source).forEach { match ->
+                val name = match.groupValues[1]
+                if (name.uppercase() !in IGNORED_PYTHON_ENV_NAMES && ENV_NAME.matches(name)) {
+                    required.putIfAbsent(
+                        name,
+                        Requirement(
+                            name = name,
+                            secret = looksSensitive(name),
+                            required = true,
+                            description = "",
+                        ),
+                    )
+                }
+            }
+
+            val candidates = linkedMapOf<String, Requirement>()
+            PYTHON_GET_ENV.findAll(source).forEach { match ->
+                val name = match.groupValues[1]
+                if (
+                    name.uppercase() !in IGNORED_PYTHON_ENV_NAMES &&
+                    ENV_NAME.matches(name) &&
+                    name !in required
+                ) {
+                    candidates.putIfAbsent(
+                        name,
+                        Requirement(
+                            name = name,
+                            secret = looksSensitive(name),
+                            required = false,
+                            description = "",
+                        ),
+                    )
+                }
+            }
+
+            return PythonConfiguration(
+                required = required.values.toList(),
+                candidates = candidates.values.toList(),
+            )
+        }
+
+        private fun mergeRequirements(vararg groups: List<Requirement>): List<Requirement> {
+            val result = linkedMapOf<String, Requirement>()
+            groups.forEach { group ->
+                group.forEach { requirement ->
+                    result.putIfAbsent(requirement.name, requirement)
+                }
+            }
+            return result.values.toList()
+        }
 
         /**
          * Supported project schema:
@@ -334,6 +432,55 @@ class ProjectConfigurationInspector(context: Context) {
             }
         }
         return result
+    }
+
+    private fun inspectPythonFiles(projectDocumentId: String): PythonConfiguration {
+        val files = projectStore.listProjectTree(projectDocumentId)
+            .asSequence()
+            .filter { file -> !file.isDirectory && file.name.endsWith(".py", ignoreCase = true) }
+            .filterNot { file ->
+                file.relativePath.split('/').any { part ->
+                    part in setOf(
+                        ".git",
+                        ".mypy_cache",
+                        ".pytest_cache",
+                        ".tox",
+                        "__pycache__",
+                        "build",
+                        "dist",
+                        "node_modules",
+                        "site-packages",
+                        "venv",
+                        ".venv",
+                    )
+                }
+            }
+            .sortedWith(
+                compareBy<ProjectStore.FileNode> { file ->
+                    if ('/' !in file.relativePath) 0 else 1
+                }.thenBy { file -> file.relativePath.lowercase() },
+            )
+            .take(MAX_PYTHON_FILES)
+
+        val required = linkedMapOf<String, Requirement>()
+        val candidates = linkedMapOf<String, Requirement>()
+        files.forEach { file ->
+            val source = runCatching { projectStore.readProjectTextFile(file) }.getOrNull() ?: return@forEach
+            val detected = parsePythonConfiguration(source)
+            detected.required.forEach { requirement ->
+                required.putIfAbsent(requirement.name, requirement)
+                candidates.remove(requirement.name)
+            }
+            detected.candidates.forEach { requirement ->
+                if (requirement.name !in required) {
+                    candidates.putIfAbsent(requirement.name, requirement)
+                }
+            }
+        }
+        return PythonConfiguration(
+            required = required.values.toList(),
+            candidates = candidates.values.toList(),
+        )
     }
 
     private fun readLimitedText(tree: Uri, id: String, maxBytes: Int): String {

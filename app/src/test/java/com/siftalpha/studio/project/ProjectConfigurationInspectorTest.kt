@@ -120,4 +120,65 @@ class ProjectConfigurationInspectorTest {
 
         assertTrue(ProjectConfigurationInspector.parseRequiredEnv(metadata).isEmpty())
     }
+
+    @Test
+    fun `python direct environment access becomes required configuration`() {
+        val result = ProjectConfigurationInspector.parsePythonConfiguration(
+            """
+                import os
+                api_key = os.environ["GEMINI_API_KEY"]
+                database = os.environ.get("DATABASE_PATH")
+            """.trimIndent(),
+        )
+
+        assertEquals(listOf("GEMINI_API_KEY"), result.required.map { it.name })
+        assertEquals(listOf("DATABASE_PATH"), result.candidates.map { it.name })
+        assertTrue(result.required.single().secret)
+        assertFalse(result.candidates.single().secret)
+    }
+
+    @Test
+    fun `python getenv candidates preserve source order and ignore common process variables`() {
+        val result = ProjectConfigurationInspector.parsePythonConfiguration(
+            """
+                import os
+                first = os.getenv("SERVICE_TOKEN")
+                path = os.getenv("PATH")
+                second = os.environ.get('PORT', '8080')
+                duplicate = os.getenv("SERVICE_TOKEN")
+            """.trimIndent(),
+        )
+
+        assertEquals(listOf("SERVICE_TOKEN", "PORT"), result.candidates.map { it.name })
+        assertTrue(result.candidates.first().secret)
+        assertFalse(result.candidates.last().secret)
+    }
+
+    @Test
+    fun `direct python access wins over optional getter candidate`() {
+        val result = ProjectConfigurationInspector.parsePythonConfiguration(
+            """
+                import os
+                optional = os.getenv("SERVICE_TOKEN")
+                required = os.environ["SERVICE_TOKEN"]
+            """.trimIndent(),
+        )
+
+        assertEquals(listOf("SERVICE_TOKEN"), result.required.map { it.name })
+        assertTrue(result.candidates.isEmpty())
+    }
+
+    @Test
+    fun `python detector preserves exact environment variable spelling`() {
+        val result = ProjectConfigurationInspector.parsePythonConfiguration(
+            """
+                from os import environ
+                value = environ["lower_case_key"]
+                optional = environ.get("mixedCase", "default")
+            """.trimIndent(),
+        )
+
+        assertEquals(listOf("lower_case_key"), result.required.map { it.name })
+        assertEquals(listOf("mixedCase"), result.candidates.map { it.name })
+    }
 }
