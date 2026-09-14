@@ -42,7 +42,7 @@ than silently relying on the old note.
 
 ### Current W2 alpha12 validation status（当前 W2 alpha12 验证状态）
 
-- Code candidate commit（代码候选提交）: 00ee9cbe1af5590d4296adf07eaa472bbd4e5a8c.
+- Code candidate commit（代码候选提交）: fcf4393d89e9251a794939b1183c259aac4833b4.
 - W2 follow-up hardening（W2 后续加固）: `STARTING`/`PREPARING`（启动中/准备中） are persisted before
   the Termux callback（Termux 回调） arrives, and live preparation-log tails are redacted before
   they reach the project output panel（项目输出面板）.
