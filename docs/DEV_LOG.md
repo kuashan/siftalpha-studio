@@ -209,3 +209,10 @@ changes, validation evidence, artifact information, device acceptance, and next 
   failure that led to the later repair.
 - [PUBLIC_REPOSITORY_BOOTSTRAP.md](WORKFLOWS/PUBLIC_REPOSITORY_BOOTSTRAP.md) records the public CI
   bootstrap and its signing boundary.
+## 2026-09-14 — W2 validation kickoff（W2 验证启动）
+
+- Current head（当前提交）: 439d1c8398b8aa5caef19b54914e0f8b04055ed2 on codex/w1c-config-wizard, PR #5 Draft（草稿）.
+- Scope（范围）: validate the already-implemented W2 Runtime Lifecycle Reliability（运行生命周期可靠性） changes in cloud Actions（云端自动化构建）.
+- Version（版本）: 0.8.0-alpha12, versionCode（版本代码）88, applicationId（应用标识） com.siftalpha.studio.
+- Device acceptance（真机验收）: NOT TESTED（未测试）; this kickoff does not produce a device package by itself.
+- Next action（下一步）: require successful same-commit Android Debug APK（普通调试 APK）、Exact Head Unit（精确头部单元）和 Localization（本地化） checks before protected stable signing.
