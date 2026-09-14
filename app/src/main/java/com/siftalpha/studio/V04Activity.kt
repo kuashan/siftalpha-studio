@@ -995,6 +995,11 @@ class V04Activity : StudioActivity() {
             ProjectRuntimeController.Action.PREPARE -> typedStates[stateKey] = RuntimeState.PREPARING
             else -> Unit
         }
+        // A new command supersedes the previous terminal failure while it is being reconciled.
+        // Persist STARTING/PREPARING before the callback arrives so a process-death or Activity
+        // recreation can still issue a real STATUS recovery probe.
+        failureReasons.remove(stateKey)
+        persistRuntimeState(stateKey)
         refresh()
         registerPending(id, pendingItem)
         // Preserve the existing fast-result reconciliation order, but expose a still-pending
