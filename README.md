@@ -39,7 +39,7 @@ Pull requests and pushes to `main` run localization checks, exact-head/unit chec
 
 Ordinary public CI uses the Android/Gradle default debug signing behavior and never receives trusted signing secrets. Its APK is for tests and fresh-install checks; it **may not upgrade over a stable-development-signed SiftAlpha Studio build**.
 
-The separate **Trusted Signed Debug APK** workflow runs automatically for pushes to the repository's `main` branch and can also be manually dispatched. It restores the protected development keystore to a runner-temporary path, builds the same debug variant, verifies the certificate fingerprint and APK metadata, uploads `SiftAlpha-Studio-trusted-debug-<version>-<short-sha>`, and removes the temporary keystore. Only this trusted artifact is intended for `adb install -r` upgrade-in-place over an existing stable development install. It does not uninstall the app or clear its data.
+The separate **Trusted Signed Debug APK** workflow is manually dispatched on the repository's `main` branch only. It restores the protected development keystore to a runner-temporary path, builds the same debug variant, verifies the certificate fingerprint and APK metadata, uploads `SiftAlpha-Studio-trusted-debug-<version>-<short-sha>`, and removes the temporary keystore. Only this trusted artifact is intended for `adb install -r` upgrade-in-place over an existing stable development install. It does not uninstall the app or clear its data.
 
 The stable signer is not stored in this repository. No signing private key, password, keystore, or base64 signing payload belongs in source, workflows, artifacts, or logs.
 

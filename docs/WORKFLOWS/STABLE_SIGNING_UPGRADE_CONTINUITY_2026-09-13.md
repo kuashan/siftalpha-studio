@@ -35,7 +35,7 @@ The ordinary public workflow remains fork-safe and secret-free:
 
 The trusted workflow is isolated:
 
-- triggers: pushes to `main` and `workflow_dispatch`
+- trigger: `workflow_dispatch` only
 - accepted context: `kuashan/siftalpha-studio` on `refs/heads/main`
 - permissions: `contents: read`
 - keystore: restored only under the runner temporary directory

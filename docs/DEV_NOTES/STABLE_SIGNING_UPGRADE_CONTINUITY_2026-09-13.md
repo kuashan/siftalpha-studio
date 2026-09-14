@@ -31,7 +31,7 @@ The certificate fingerprint is public verification metadata. The keystore, priva
 
 ### Trusted signed APK
 
-`trusted-signed-debug-apk.yml` runs for pushes to, or manual dispatches on, the Public repository's `main` branch only. It has `contents: read` permissions, restores the protected keystore into `RUNNER_TEMP`, passes the four protected signing values to Gradle, verifies the signer and APK metadata, uploads a versioned trusted artifact, and removes the temporary keystore in an `always()` cleanup step.
+`trusted-signed-debug-apk.yml` is manual-dispatch only and runs only for the Public repository's `main` branch. It has `contents: read` permissions, restores the protected keystore into `RUNNER_TEMP`, passes the four protected signing values to Gradle, verifies the signer and APK metadata, uploads a versioned trusted artifact, and removes the temporary keystore in an `always()` cleanup step.
 
 Gradle enables the trusted debug signing configuration only when all four protected signing inputs and the runner-temporary keystore path are present. With no trusted inputs, local and ordinary CI builds continue to use normal debug signing.
 
