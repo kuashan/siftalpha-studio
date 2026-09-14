@@ -1,6 +1,7 @@
 # Stable-signed device test package（稳定签名设备测试包）
 
-**Status:** Required from the next device-acceptance candidate（下一个真机验收候选版本起生效）  
+**Status:** Required from the next device-acceptance candidate（下一个真机验收候选版本起生效）
+
 **Scope:** Every installable feature candidate delivered for real-device testing
 
 ## Policy
