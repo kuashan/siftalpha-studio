@@ -2,9 +2,6 @@ name: Trusted Signed Debug APK
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
 
 permissions:
   contents: read
@@ -40,6 +37,7 @@ jobs:
           SIFTALPHA_DEBUG_KEYSTORE_B64: ${{ secrets.SIFTALPHA_DEBUG_KEYSTORE_B64 }}
           SIFTALPHA_DEBUG_STORE_PASSWORD: ${{ secrets.SIFTALPHA_DEBUG_STORE_PASSWORD }}
           SIFTALPHA_DEBUG_KEY_ALIAS: ${{ secrets.SIFTALPHA_DEBUG_KEY_ALIAS }}
+          SIFTALPHA_DEBUG_KEY_PASSWORD: ${{ secrets.SIFTALPHA_DEBUG_KEY_PASSWORD }}
         run: |
           set -euo pipefail
           keystore="${RUNNER_TEMP}/siftalpha-debug-keystore"
@@ -70,3 +68,11 @@ jobs:
         with:
           name: SiftAlpha-Studio-trusted-debug-${{ github.sha }}
           path: app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Remove temporary signing keystore
+        if: always()
+        shell: bash
+        run: |
+          set -eu
+          test -n "${SIFTALPHA_DEBUG_KEYSTORE_FILE:-}" || exit 0
+          rm -f -- "$SIFTALPHA_DEBUG_KEYSTORE_FILE"
