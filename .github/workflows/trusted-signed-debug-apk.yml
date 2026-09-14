@@ -38,9 +38,6 @@ jobs:
       - name: Restore signing keystore
         env:
           SIFTALPHA_DEBUG_KEYSTORE_B64: ${{ secrets.SIFTALPHA_DEBUG_KEYSTORE_B64 }}
-          SIFTALPHA_DEBUG_STORE_PASSWORD: ${{ secrets.SIFTALPHA_DEBUG_STORE_PASSWORD }}
-          SIFTALPHA_DEBUG_KEY_ALIAS: ${{ secrets.SIFTALPHA_DEBUG_KEY_ALIAS }}
-          SIFTALPHA_DEBUG_KEY_PASSWORD: ${{ secrets.SIFTALPHA_DEBUG_KEY_PASSWORD }}
         run: |
           set -euo pipefail
           keystore="${RUNNER_TEMP}/siftalpha-debug-keystore"
@@ -49,6 +46,10 @@ jobs:
           echo "SIFTALPHA_DEBUG_KEYSTORE_FILE=$keystore" >> "$GITHUB_ENV"
 
       - name: Build APK
+        env:
+          SIFTALPHA_DEBUG_STORE_PASSWORD: ${{ secrets.SIFTALPHA_DEBUG_STORE_PASSWORD }}
+          SIFTALPHA_DEBUG_KEY_ALIAS: ${{ secrets.SIFTALPHA_DEBUG_KEY_ALIAS }}
+          SIFTALPHA_DEBUG_KEY_PASSWORD: ${{ secrets.SIFTALPHA_DEBUG_KEY_PASSWORD }}
         run: gradle --no-daemon :app:assembleDebug
 
       - name: Verify signer and metadata
