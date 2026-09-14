@@ -51,9 +51,9 @@ device testing and may have a different debug signer.
 The project default for real-device acceptance is now the Trusted Signed Debug APK（稳定签名调试
 包）, including upgrade-in-place testing. The ordinary public pull-request Debug APK（普通公开调试
 包） remains useful for fork-safe CI（分支安全持续集成） and fresh-install checks only. An unmerged
-candidate may be called upgradeable only after an isolated protected candidate-signing workflow（受
-保护的候选版本签名流程） signs the exact public-validated commit; signing secrets must never enter
-untrusted pull-request build or test steps.
+candidate becomes upgradeable only after the protected candidate-signing workflow（受保护的候选版本
+签名流程） signs the exact public-validated commit; signing secrets must never enter untrusted
+pull-request build or test steps.
 
 ## GitHub Actions artifacts
 
@@ -61,9 +61,11 @@ Pull requests and pushes to `main` run localization checks, exact-head/unit chec
 
 Ordinary public CI uses the Android/Gradle default debug signing behavior and never receives trusted signing secrets. Its APK is for tests and fresh-install checks; it **may not upgrade over a stable-development-signed SiftAlpha Studio build**.
 
-The current protected workflow runs for pushes to `main` (and the retained legacy branch) only. Until
-the protected candidate-signing path is available, a pull-request artifact remains non-upgradeable,
-even when all public checks pass.
+The protected candidate workflow can be triggered directly by the repository owner posting exactly
+`/stable-debug` on an open same-repository pull request. It locates the successful public Android
+artifact for that exact commit, verifies it, re-signs the APK with the stable certificate, and uploads
+the trusted candidate. It never checks out or executes pull-request source while signing secrets are
+available.
 
 The separate **Trusted Signed Debug APK** workflow runs automatically for pushes to the repository's `main` branch and can also be manually dispatched. It restores the protected development keystore to a runner-temporary path, builds the same debug variant, verifies the certificate fingerprint and APK metadata, uploads `SiftAlpha-Studio-trusted-debug-<version>-<short-sha>`, and removes the temporary keystore. Only this trusted artifact is intended for `adb install -r` upgrade-in-place over an existing stable development install. It does not uninstall the app or clear its data.
 

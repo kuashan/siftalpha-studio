@@ -42,11 +42,11 @@ acceptance pass must be the Trusted Signed Debug APK（稳定签名调试包）,
 testing. The ordinary public Debug APK（普通公开调试包） remains a fork-safe CI（分支安全持续集成）
 and fresh-install artifact only; it is not a substitute when an installed package must be upgraded.
 
-The current protected workflow signs protected `main`/legacy-branch builds. To apply the same stable
-signer to an unmerged feature candidate, add an isolated protected candidate-signing workflow（受保护
-的候选版本签名流程） that signs the exact public-validated commit. It must not make signing secrets
-available to untrusted pull-request build or test steps. Until that path exists, an ordinary
-pull-request artifact must be reported as non-upgradeable.
+The protected candidate workflow now signs an unmerged feature candidate after the repository owner
+posts exactly `/stable-debug` on its PR. It locates the successful public APK for the exact PR head,
+verifies the public checks and artifact, and signs the APK in an isolated protected job. It does not
+check out or execute pull-request source while signing secrets are available. An ordinary
+pull-request artifact remains non-upgradeable until this step completes.
 
 Because alpha10 was built with ordinary public Debug signing, the first stable-signed device package
 may require a one-time uninstall before installation. Later candidates must retain the stable signer,

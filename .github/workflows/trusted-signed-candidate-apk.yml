@@ -1,0 +1,340 @@
+name: Trusted Signed Candidate APK
+
+on:
+  issue_comment:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      pull_request:
+        description: Open PR number whose successful public APK should be signed
+        required: true
+        type: string
+
+permissions:
+  actions: write
+  contents: read
+  pull-requests: read
+
+jobs:
+  resolve-candidate:
+    if: >-
+      github.repository == 'kuashan/siftalpha-studio' &&
+      (
+        (
+          github.event_name == 'issue_comment' &&
+          github.event.issue.pull_request != null &&
+          github.event.comment.user.login == 'kuashan' &&
+          github.event.comment.body == '/stable-debug'
+        ) ||
+        (
+          github.event_name == 'workflow_dispatch' &&
+          github.actor == 'kuashan'
+        )
+      )
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      approved: ${{ steps.resolve.outputs.approved }}
+      artifact_url: ${{ steps.resolve.outputs.artifact_url }}
+      candidate_sha: ${{ steps.resolve.outputs.candidate_sha }}
+      pull_request: ${{ steps.resolve.outputs.pull_request }}
+      public_run_id: ${{ steps.resolve.outputs.public_run_id }}
+
+    steps:
+      - name: Resolve exact public candidate
+        id: resolve
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const requestedPull = context.eventName === 'workflow_dispatch'
+              ? Number(context.payload.inputs?.pull_request)
+              : context.issue.number;
+
+            if (!Number.isInteger(requestedPull) || requestedPull < 1) {
+              core.setFailed('A valid pull request number is required.');
+              return;
+            }
+
+            const pr = await github.rest.pulls.get({
+              owner,
+              repo,
+              pull_number: requestedPull,
+            });
+
+            if (pr.data.state !== 'open') {
+              core.setFailed(`Pull request #${requestedPull} is not open.`);
+              return;
+            }
+
+            const headRepository = pr.data.head.repo?.full_name;
+            if (headRepository !== `${owner}/${repo}`) {
+              core.setFailed('Candidate signing is limited to branches in the owner repository.');
+              return;
+            }
+
+            const candidateSha = pr.data.head.sha;
+            const workflowRuns = await github.paginate(
+              github.rest.actions.listWorkflowRunsForRepo,
+              {
+                owner,
+                repo,
+                head_sha: candidateSha,
+                event: 'pull_request',
+                per_page: 100,
+              },
+              response => response.data,
+            );
+
+            const requiredWorkflows = [
+              'Android Debug APK',
+              'Exact Head Unit',
+              'Localization',
+            ];
+            const successfulRuns = new Map();
+            for (const run of workflowRuns) {
+              if (
+                run.status === 'completed' &&
+                run.conclusion === 'success' &&
+                requiredWorkflows.includes(run.name)
+              ) {
+                const previous = successfulRuns.get(run.name);
+                if (!previous || new Date(run.updated_at) > new Date(previous.updated_at)) {
+                  successfulRuns.set(run.name, run);
+                }
+              }
+            }
+
+            const missingWorkflows = requiredWorkflows.filter(name => !successfulRuns.has(name));
+            if (missingWorkflows.length > 0) {
+              core.setFailed(`Required public checks are not successful: ${missingWorkflows.join(', ')}`);
+              return;
+            }
+
+            const androidRun = successfulRuns.get('Android Debug APK');
+            const artifacts = await github.paginate(
+              github.rest.actions.listWorkflowRunArtifacts,
+              {
+                owner,
+                repo,
+                run_id: androidRun.id,
+                per_page: 100,
+              },
+              response => response.data,
+            );
+
+            const candidateArtifacts = artifacts.filter(artifact =>
+              artifact.name.startsWith('SiftAlpha-Studio-debug-') && !artifact.expired
+            );
+            if (candidateArtifacts.length !== 1) {
+              core.setFailed(
+                `Expected one non-expired public Debug APK artifact, found ${candidateArtifacts.length}.`
+              );
+              return;
+            }
+
+            const artifact = candidateArtifacts[0];
+            core.setOutput('approved', 'true');
+            core.setOutput('artifact_url', artifact.archive_download_url);
+            core.setOutput('candidate_sha', candidateSha);
+            core.setOutput('pull_request', String(requestedPull));
+            core.setOutput('public_run_id', String(androidRun.id));
+            core.notice(
+              `Resolved PR #${requestedPull} at ${candidateSha} from public run ${androidRun.id}.`
+            );
+
+  sign-candidate:
+    needs: resolve-candidate
+    if: needs.resolve-candidate.outputs.approved == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      EXPECTED_DEBUG_CERT_SHA256: 1d96e9ce12c06e6ff0571cf8f82cf2461ac3b5261189ad06ab0747ce92f8192e
+      CANDIDATE_SHA: ${{ needs.resolve-candidate.outputs.candidate_sha }}
+      PULL_REQUEST: ${{ needs.resolve-candidate.outputs.pull_request }}
+      PUBLIC_RUN_ID: ${{ needs.resolve-candidate.outputs.public_run_id }}
+      ARTIFACT_URL: ${{ needs.resolve-candidate.outputs.artifact_url }}
+
+    steps:
+      - name: Set up JDK 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK 36
+        shell: bash
+        run: |
+          set -euo pipefail
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Download exact public APK artifact
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          archive="${RUNNER_TEMP}/public-debug-artifact.zip"
+          entries_file="${RUNNER_TEMP}/public-debug-artifact.entries"
+          input_apk="${RUNNER_TEMP}/public-debug.apk"
+
+          curl --fail --location --silent --show-error \
+            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "${ARTIFACT_URL}" \
+            --output "${archive}"
+          test -s "${archive}"
+
+          unzip -Z1 "${archive}" > "${entries_file}"
+          apk_entries=()
+          while IFS= read -r entry; do
+            case "${entry}" in
+              ""|/*|../*|*/../*|*/..|..)
+                printf 'Unsafe artifact path: %s\n' "${entry}" >&2
+                exit 1
+                ;;
+            esac
+            if [[ "${entry}" == *.apk ]]; then
+              apk_entries+=("${entry}")
+            fi
+          done < "${entries_file}"
+
+          if [[ "${#apk_entries[@]}" -ne 1 ]]; then
+            printf 'Expected exactly one APK in the public artifact, found %s.\n' "${#apk_entries[@]}" >&2
+            exit 1
+          fi
+
+          unzip -p "${archive}" "${apk_entries[0]}" > "${input_apk}"
+          test -s "${input_apk}"
+          printf 'Downloaded one APK from public run %s.\n' "${PUBLIC_RUN_ID}"
+
+      - name: Restore protected signing keystore
+        shell: bash
+        env:
+          SIFTALPHA_DEBUG_KEYSTORE_B64: ${{ secrets.SIFTALPHA_DEBUG_KEYSTORE_B64 }}
+          SIFTALPHA_DEBUG_STORE_PASSWORD: ${{ secrets.SIFTALPHA_DEBUG_STORE_PASSWORD }}
+          SIFTALPHA_DEBUG_KEY_ALIAS: ${{ secrets.SIFTALPHA_DEBUG_KEY_ALIAS }}
+          SIFTALPHA_DEBUG_KEY_PASSWORD: ${{ secrets.SIFTALPHA_DEBUG_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          : "${SIFTALPHA_DEBUG_KEYSTORE_B64:?}"
+          : "${SIFTALPHA_DEBUG_STORE_PASSWORD:?}"
+          : "${SIFTALPHA_DEBUG_KEY_ALIAS:?}"
+          : "${SIFTALPHA_DEBUG_KEY_PASSWORD:?}"
+          umask 077
+          keystore="${RUNNER_TEMP}/siftalpha-debug-keystore"
+          printf '%s' "${SIFTALPHA_DEBUG_KEYSTORE_B64}" | base64 --decode > "${keystore}"
+          test -s "${keystore}"
+          keytool -list -keystore "${keystore}" \
+            -storepass "${SIFTALPHA_DEBUG_STORE_PASSWORD}" \
+            -alias "${SIFTALPHA_DEBUG_KEY_ALIAS}" >/dev/null 2>&1
+          printf 'SIFTALPHA_CANDIDATE_KEYSTORE=%s\n' "${keystore}" >> "${GITHUB_ENV}"
+
+      - name: Sign exact public APK with stable certificate
+        shell: bash
+        env:
+          SIFTALPHA_DEBUG_STORE_PASSWORD: ${{ secrets.SIFTALPHA_DEBUG_STORE_PASSWORD }}
+          SIFTALPHA_DEBUG_KEY_ALIAS: ${{ secrets.SIFTALPHA_DEBUG_KEY_ALIAS }}
+          SIFTALPHA_DEBUG_KEY_PASSWORD: ${{ secrets.SIFTALPHA_DEBUG_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          sdk_root="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-}}"
+          apksigner="${sdk_root}/build-tools/36.0.0/apksigner"
+          aapt="${sdk_root}/build-tools/36.0.0/aapt"
+          input_apk="${RUNNER_TEMP}/public-debug.apk"
+          signed_dir="${RUNNER_TEMP}/siftalpha-trusted-candidate"
+          signed_apk="${signed_dir}/SiftAlpha-Studio-trusted-candidate.apk"
+          mkdir -p "${signed_dir}"
+
+          test -x "${apksigner}"
+          test -x "${aapt}"
+          test -f "${input_apk}"
+
+          package_line="$("${aapt}" dump badging "${input_apk}" | sed -n "s/^package: //p" | head -n 1)"
+          printf '%s\n' "${package_line}" | grep -F "name='com.siftalpha.studio'" >/dev/null
+
+          "${apksigner}" sign \
+            --ks "${SIFTALPHA_CANDIDATE_KEYSTORE}" \
+            --ks-pass "env:SIFTALPHA_DEBUG_STORE_PASSWORD" \
+            --ks-key-alias "${SIFTALPHA_DEBUG_KEY_ALIAS}" \
+            --key-pass "env:SIFTALPHA_DEBUG_KEY_PASSWORD" \
+            --out "${signed_apk}" \
+            "${input_apk}"
+          test -s "${signed_apk}"
+
+      - name: Verify stable signer and package metadata
+        id: verify
+        shell: bash
+        run: |
+          set -euo pipefail
+          sdk_root="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-}}"
+          apksigner="${sdk_root}/build-tools/36.0.0/apksigner"
+          aapt="${sdk_root}/build-tools/36.0.0/aapt"
+          signed_apk="${RUNNER_TEMP}/siftalpha-trusted-candidate/SiftAlpha-Studio-trusted-candidate.apk"
+          verification_file="${RUNNER_TEMP}/siftalpha-trusted-candidate/verification.txt"
+
+          actual="$("${apksigner}" verify --print-certs "${signed_apk}" | awk '/certificate SHA-256 digest/ {print tolower($NF); exit}')"
+          actual="${actual//:/}"
+          expected="${EXPECTED_DEBUG_CERT_SHA256//:/}"
+          test -n "${actual}"
+          test "${actual}" = "${expected}"
+
+          package_line="$("${aapt}" dump badging "${signed_apk}" | sed -n "s/^package: //p" | head -n 1)"
+          printf '%s\n' "${package_line}" | grep -F "name='com.siftalpha.studio'" >/dev/null
+          version_code="$(printf '%s\n' "${package_line}" | sed -n "s/.*versionCode='\([^']*\)'.*/\1/p")"
+          version_name="$(printf '%s\n' "${package_line}" | sed -n "s/.*versionName='\([^']*\)'.*/\1/p")"
+          test -n "${version_code}"
+          test -n "${version_name}"
+          case "${version_code}" in
+            *[!0-9]*) printf 'Invalid versionCode: %s\n' "${version_code}" >&2; exit 1 ;;
+          esac
+
+          apk_sha256="$(sha256sum "${signed_apk}" | awk '{print $1}')"
+          short_sha="${CANDIDATE_SHA:0:7}"
+          artifact_name="SiftAlpha-Studio-trusted-candidate-${version_name}-code${version_code}-${short_sha}"
+          {
+            printf 'source_commit=%s\n' "${CANDIDATE_SHA}"
+            printf 'pull_request=%s\n' "${PULL_REQUEST}"
+            printf 'public_android_run=%s\n' "${PUBLIC_RUN_ID}"
+            printf 'application_id=com.siftalpha.studio\n'
+            printf 'version_name=%s\n' "${version_name}"
+            printf 'version_code=%s\n' "${version_code}"
+            printf 'certificate_sha256=%s\n' "${actual}"
+            printf 'apk_sha256=%s\n' "${apk_sha256}"
+          } > "${verification_file}"
+          printf 'artifact_name=%s\n' "${artifact_name}" >> "${GITHUB_OUTPUT}"
+          printf 'Verified stable signer SHA-256: %s\n' "${actual}"
+          printf 'Verified package: com.siftalpha.studio\n'
+          printf 'Verified version: %s (versionCode %s)\n' "${version_name}" "${version_code}"
+
+      - name: Upload stable-signed candidate APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.verify.outputs.artifact_name }}
+          path: ${{ runner.temp }}/siftalpha-trusted-candidate
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Remove temporary signing material
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          keystore="${SIFTALPHA_CANDIDATE_KEYSTORE:-}"
+          if [[ -n "${keystore}" ]]; then
+            case "${keystore}" in
+              "${RUNNER_TEMP}"/*) rm -f -- "${keystore}" ;;
+              *) printf 'Temporary keystore path was outside RUNNER_TEMP.\n' >&2; exit 1 ;;
+            esac
+          fi
+          rm -f -- \
+            "${RUNNER_TEMP}/public-debug-artifact.zip" \
+            "${RUNNER_TEMP}/public-debug-artifact.entries" \
+            "${RUNNER_TEMP}/public-debug.apk"
+          rm -rf -- "${RUNNER_TEMP}/siftalpha-trusted-candidate"

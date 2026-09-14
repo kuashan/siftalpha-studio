@@ -31,8 +31,9 @@ The separate `Trusted Signed Debug APK` workflow runs only for pushes to, or man
 
 The project policy now requires the Trusted Signed Debug APK（稳定签名调试包） as the default package
 for real-device feature acceptance and in-place upgrade testing. An unmerged candidate may use that
-signer only through an isolated protected candidate-signing workflow（受保护的候选版本签名流程）
-that signs the exact public-validated commit. Until that workflow exists, the ordinary pull-request
-artifact must be treated as non-upgradeable, even when its public checks pass.
+signer only through the isolated protected candidate-signing workflow（受保护的候选版本签名流程）
+after the repository owner authorizes the exact PR with `/stable-debug`. The signer downloads the
+already-built public APK and does not check out or execute pull-request source while secrets are
+available.
 
 The stable development signer exists only in protected GitHub Actions Secrets and a controlled private/local source. The workflow consumes these secret names only: `SIFTALPHA_DEBUG_KEYSTORE_B64`, `SIFTALPHA_DEBUG_STORE_PASSWORD`, `SIFTALPHA_DEBUG_KEY_ALIAS`, and `SIFTALPHA_DEBUG_KEY_PASSWORD`. Their values must never appear in source, workflow text, logs, artifacts, issues, pull requests, or comments. Fork pull requests never receive them.

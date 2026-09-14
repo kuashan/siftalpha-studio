@@ -77,9 +77,10 @@ containing `app-debug.apk`.
   app.
 - An ordinary public pull-request Debug APK（普通公开调试包） is only for cloud checks and
   fresh-install testing. It must not be described as upgradeable.
-- An unmerged candidate requires an isolated protected candidate-signing workflow（受保护的候选版本
-  签名流程） that signs the exact public-validated commit. Signing secrets must never be exposed to
-  untrusted pull-request code.
+- An unmerged candidate uses the isolated protected candidate-signing workflow（受保护的候选版本签名
+  流程） by the repository owner's exact `/stable-debug` PR command. It signs the exact public-
+  validated APK artifact, without checking out or executing untrusted pull-request code while signing
+  secrets are available.
 - The post-merge Trusted Signed Debug workflow produces the package intended to overwrite an existing
   trusted development install without uninstalling or clearing data.
 - One-time migration（一次性迁移）: because alpha10 was built with an ordinary public Debug signer,
@@ -136,8 +137,9 @@ runtime payload. Never write them to source files, `.env`, logs, GitHub, or this
 
 ## Current next action（当前下一步）
 
-Before the next device-acceptance pass, provide a Trusted Signed Debug APK（稳定签名调试包） from
-an isolated protected candidate-signing workflow. The alpha10 ordinary Debug APK remains a historical
+The protected candidate-signing workflow is now available on `main`. After the public checks for the
+exact candidate pass, authorize it with `/stable-debug` on the PR and provide the resulting Trusted
+Signed Debug APK（稳定签名调试包）. The alpha10 ordinary Debug APK remains a historical
 non-upgradeable test artifact and its W1C device acceptance is still `PENDING`. After the first
 stable-signed package is installed (with a one-time uninstall if Android reports a signer mismatch),
 record the user's configuration-flow result in `docs/DEV_LOG.md`; then continue the next feature

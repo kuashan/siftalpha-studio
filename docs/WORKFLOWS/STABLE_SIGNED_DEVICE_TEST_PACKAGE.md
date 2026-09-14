@@ -19,9 +19,10 @@ so it is not an upgradeable device package and must not be presented as one.
 
 1. Run the public pull-request checks against the exact candidate commit: localization, unit/host
    checks, version validation, and ordinary Debug APK build. These steps receive no signing secrets.
-2. After the candidate is eligible for device testing, use an isolated protected candidate-signing
-   workflow（受保护的候选版本签名流程） to check out and sign that exact commit with the stable
-   development signer.
+2. After the candidate is eligible for device testing, the repository owner posts exactly
+   `/stable-debug` on the PR. The isolated protected candidate-signing workflow（受保护的候选版本签名
+   流程） finds the successful public APK for that exact commit and signs the APK with the stable
+   development signer without checking out or executing PR source.
 3. Verify the package id, `versionName`（版本名称）, higher `versionCode`, stable certificate
    fingerprint, launcher icon, and artifact digest（构建产物摘要） before upload.
 4. Provide the extracted stable-signed APK to the user for real-device testing. Record the source
@@ -31,10 +32,10 @@ so it is not an upgradeable device package and must not be presented as one.
    create a formal release automatically.
 
 Signing secrets must be available only inside the protected signer. They must never be passed to
-untrusted pull-request build/test steps, written to the repository, or recorded in logs. The existing
-protected workflow is currently limited to protected `main`/legacy-branch builds; it cannot by itself
-make an unmerged PR artifact upgradeable. That protected candidate path is therefore a required
-workflow follow-up.
+untrusted pull-request build/test steps, written to the repository, or recorded in logs. The direct
+trigger is owner-only and the signer handles only the already-built APK artifact. The workflow also
+supports GitHub's manual `workflow_dispatch`（手动启动工作流） with a PR number when that interface
+is available.
 
 ## One-time migration from ordinary Debug
 

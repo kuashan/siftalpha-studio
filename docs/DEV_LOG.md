@@ -101,20 +101,20 @@ changes, validation evidence, artifact information, device acceptance, and next 
 - Ordinary public pull-request Debug artifacts remain available for fork-safe CI（分支安全持续集成）
   and fresh-install checks, but they are not upgradeable device packages and must not be presented
   as such.
-- Security boundary: a protected candidate-signing workflow（受保护的候选版本签名流程） must sign
-  the exact public-validated commit. Signing secrets may be used only in the isolated signer and may
-  never be exposed to untrusted pull-request build/test steps. The current trusted workflow is
-  limited to protected `main`/legacy-branch builds, so this candidate-signing path remains the next
-  workflow implementation item.
+- Security boundary: the protected candidate-signing workflow（受保护的候选版本签名流程） signs
+  only the exact public-validated APK after the repository owner authorizes `/stable-debug` on the PR.
+  Signing secrets may be used only in the isolated signer and are never exposed to untrusted
+  pull-request build/test steps.
 - One-time migration: if the device still has an ordinary alpha10/previous package installed, the
   user may need to uninstall it once before installing the first stable-signed test package. After
   that baseline, every installable candidate must retain `com.siftalpha.studio`, use a higher
   `versionCode`, and keep the stable signer.
-- Current scope: this is a documentation and workflow-policy update for PR #5, candidate alpha10;
-  no code version bump or new APK was produced by this record-only change. Alpha10 device acceptance
-  remains `PENDING`.
-- Next action: establish the protected candidate-signing path, then provide the stable-signed alpha10
-  candidate for the user's real-device acceptance before deciding whether to merge.
+- Current scope: the protected candidate-signing workflow is implemented on `main`; the PR #5
+  documentation records the direct trigger. No code version bump was made by this workflow change.
+  Alpha10 device acceptance remains `PENDING` until the stable-signed candidate is tested.
+- Next action: trigger `/stable-debug` on PR #5 after its public checks are successful, then provide
+  the stable-signed alpha10 candidate for the user's real-device acceptance before deciding whether
+  to merge.
 
 ## 2026-09-13 — Stable signing and upgrade continuity（稳定签名与覆盖安装连续性）
 

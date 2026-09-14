@@ -39,9 +39,9 @@ current code, the current pull request, or the latest development log.
   the default upgradeable device package.
 - Stable-signed candidate packages must be created inside a protected signing boundary（受保护的签名
   边界）. Never expose signing secrets to untrusted pull-request code or its build/test steps. The
-  current Trusted Signed Debug APK（稳定签名调试包） workflow is still limited to protected
-  `main`/legacy-branch builds, so an isolated protected candidate-signing workflow is required before
-  an unmerged PR candidate can be called upgradeable.
+  `.github/workflows/trusted-signed-candidate-apk.yml` workflow signs only an already successful
+  public APK after the repository owner sends the exact `/stable-debug` command on the PR (or manually
+  dispatches it); it does not check out or execute PR code while secrets are present.
 - Do not claim device acceptance from CI alone. Record the user's actual result as `PASS`, `FAIL`,
   or `NOT TESTED`.
 - Keep the active feature PR Draft（草稿） while several features are being device-tested. Do not
