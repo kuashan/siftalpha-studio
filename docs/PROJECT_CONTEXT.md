@@ -64,6 +64,22 @@ containing `app-debug.apk`.
   accepted until the user reports the result. This ordinary package is not an upgrade path for the
   stable-signed installation.
 
+### Latest trusted alpha10 candidate（最近的受信 alpha10 候选包）
+
+- Source candidate: PR #5, commit
+  `8f822ba60ea213d2b6658a017df5cb5ab17070c2`.
+- Protected candidate run（受保护候选流程）:
+  [34813023478](https://github.com/kuashan/siftalpha-studio/actions/runs/34813023478), `SUCCESS`.
+- Package: `0.8.0-alpha10`, `versionCode 86`, application id
+  `com.siftalpha.studio`.
+- Certificate SHA-256（证书校验值）:
+  `1d96e9ce12c06e6ff0571cf8f82cf2461ac3b5261189ad06ab0747ce92f8192e`.
+- APK SHA-256（APK 文件校验值）:
+  `d1fe058d369e567f8b90e526a3a0d58ab4ef398c92355c9a354f66922a1a0fc2`.
+- Device acceptance（真机验收）: `PENDING`（待验收）. This is the first stable-signed baseline
+  intended to solve upgrade-in-place; a one-time uninstall may be needed from the previous
+  ordinary-signed installation.
+
 ## Confirmed user requirements（已确认的用户要求）
 
 ### Build and release
@@ -137,10 +153,9 @@ runtime payload. Never write them to source files, `.env`, logs, GitHub, or this
 
 ## Current next action（当前下一步）
 
-The protected candidate-signing workflow is now available on `main`. After the public checks for the
-exact candidate pass, authorize it with `/stable-debug` on the PR and provide the resulting Trusted
-Signed Debug APK（稳定签名调试包）. The alpha10 ordinary Debug APK remains a historical
-non-upgradeable test artifact and its W1C device acceptance is still `PENDING`. After the first
-stable-signed package is installed (with a one-time uninstall if Android reports a signer mismatch),
-record the user's configuration-flow result in `docs/DEV_LOG.md`; then continue the next feature
-slice or prepare the accepted batch for merge.
+The protected candidate-signing workflow is now available on `main`, and the direct `/stable-debug`
+path has been verified successfully for PR #5. The stable-signed alpha10 candidate is ready for
+real-device installation and W1C acceptance. The alpha10 ordinary Debug APK remains a historical
+non-upgradeable test artifact. After the first stable-signed package is installed (with a one-time
+uninstall if Android reports a signer mismatch), record the user's configuration-flow result in
+`docs/DEV_LOG.md`; then continue the next feature slice or prepare the accepted batch for merge.

@@ -116,6 +116,31 @@ changes, validation evidence, artifact information, device acceptance, and next 
   the stable-signed alpha10 candidate for the user's real-device acceptance before deciding whether
   to merge.
 
+## 2026-09-14 — Direct stable candidate generation verified（直接生成稳定候选包已验证）
+
+- Scope: remove the need for the user to manually start a privileged GitHub Actions workflow while
+  preserving the signing boundary for an open pull request.
+- Implementation: the protected `Trusted Signed Candidate APK` workflow is available on `main` and
+  accepts the repository owner's exact `/stable-debug` PR comment. It resolves the exact PR head,
+  requires the successful public validation workflows, downloads their APK without executing PR code,
+  and signs only that APK with the protected stable certificate.
+- Source candidate: PR #5, `codex/w1c-config-wizard`, commit
+  `8f822ba60ea213d2b6658a017df5cb5ab17070c2`.
+- Public validation: Android Debug APK run
+  [34812853160](https://github.com/kuashan/siftalpha-studio/actions/runs/34812853160) passed;
+  Exact Head Unit and Localization also passed.
+- Protected signing: run
+  [34813023478](https://github.com/kuashan/siftalpha-studio/actions/runs/34813023478) passed.
+- Delivered candidate: `0.8.0-alpha10`, `versionCode 86`, application id
+  `com.siftalpha.studio`, stable certificate SHA-256
+  `1d96e9ce12c06e6ff0571cf8f82cf2461ac3b5261189ad06ab0747ce92f8192e`.
+- APK SHA-256: `d1fe058d369e567f8b90e526a3a0d58ab4ef398c92355c9a354f66922a1a0fc2`.
+- Device acceptance: `PENDING`; the user must install and test this stable-signed package. If the
+  current installation was made with the old ordinary public Debug signer, a one-time uninstall is
+  expected before establishing the stable-signed baseline.
+- Next action: after the user confirms device acceptance, continue feature work in the Draft PR;
+  do not merge automatically.
+
 ## 2026-09-13 — Stable signing and upgrade continuity（稳定签名与覆盖安装连续性）
 
 - Decision: ordinary public PR Debug APKs and protected Trusted Signed Debug APKs are separate
