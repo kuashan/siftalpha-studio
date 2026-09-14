@@ -17,7 +17,7 @@ changes, validation evidence, artifact information, device acceptance, and next 
   unmerged（开放且未合并）.
 - Candidate（候选版本）: 0.8.0-alpha12, Android versionCode 88, application id（应用标识）
   com.siftalpha.studio.
-- Code candidate commit（代码候选提交）: W2_COMMIT_PENDING.
+- Code candidate commit（代码候选提交）: f7466e370bbfe915de98f5adb9726581bd2d8010.
 - Scope（范围）: project-scoped lifecycle resolution（项目级生命周期解析）, foreground status
   recovery（前台状态恢复）, failure-reason persistence（失败原因持久化）, duplicate-start
   protection（重复启动保护）, runtime-discovery persistence（运行配置发现持久化）, and

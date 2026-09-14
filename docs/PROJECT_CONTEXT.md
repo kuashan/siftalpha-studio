@@ -42,7 +42,7 @@ than silently relying on the old note.
 
 ### Current W2 alpha12 validation status（当前 W2 alpha12 验证状态）
 
-- Code candidate commit（代码候选提交）: W2_COMMIT_PENDING.
+- Code candidate commit（代码候选提交）: f7466e370bbfe915de98f5adb9726581bd2d8010.
 - W2 implementation is complete on the PR branch, but the three public cloud checks（云端检查）
   have not yet run for this candidate: NOT RUN（未运行）.
 - Trusted Signed Debug APK（稳定签名调试包）: NOT REQUESTED（未请求） until the same-commit
