@@ -4,7 +4,8 @@
 Date（日期）: 2026-09-14  
 Branch/PR（分支/合并请求）: codex/w1c-config-wizard, PR #5, Draft（草稿）  
 Candidate（候选版本）: 0.8.0-alpha12, versionCode 88  
-Application id（应用标识）: com.siftalpha.studio
+Application id（应用标识）: com.siftalpha.studio  
+Code candidate commit（代码候选提交）: b6135d705441b8b3149f4249defe39e6e801a72f
 
 ## Goal（目标）
 
@@ -39,6 +40,7 @@ configuration, rerun, stop, failure, and app reopen transitions（准备、检�
 - Existing action-policy tests now verify that runtime-discovered required configuration blocks a
   retry until Configuration（配置） is completed.
 - Cloud checks（云端检查）: NOT RUN（未运行） at note creation; they must run against the same
-  final commit.
+  final commit. Candidate signing run 34832205686 FAILED（失败） because those same-commit checks
+  were absent; the signing job was skipped.
 - Real-device acceptance（真机验收）: NOT TESTED（未测试）. It must be reported separately from
   Actions（自动化流程） results.
