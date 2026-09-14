@@ -17,6 +17,8 @@ class V04ProjectGateway(private val context: Context) {
         val summary: ProjectStore.ProjectSummary,
         val folderName: String,
         val sourceUrl: String?,
+        /** Root-only authoritative selection used by Runtime Center presentation. */
+        val runtimeSelection: ProjectRuntimeExecutionPlanner.Selection,
     )
 
     /** Runtime-selection facts read from authoritative project metadata and project paths. */
@@ -45,6 +47,7 @@ class V04ProjectGateway(private val context: Context) {
                 summary = summary,
                 folderName = documentDisplayName(summary.documentId) ?: summary.name,
                 sourceUrl = sourceUrl(summary.documentId),
+                runtimeSelection = runtimeSelection(summary.documentId),
             )
         }
 
@@ -219,6 +222,23 @@ class V04ProjectGateway(private val context: Context) {
             summary = summary,
             folderName = documentDisplayName(projectId) ?: summary.name,
             sourceUrl = sourceUrl(projectId),
+            runtimeSelection = runtimeSelection(projectId),
+        )
+    }
+
+    /**
+     * Runtime Center only needs root evidence to present a card. Full tree facts remain deferred to
+     * the action-time execution planner, so a refresh never becomes a recursive project scan.
+     */
+    private fun runtimeSelection(projectDocumentId: String): ProjectRuntimeExecutionPlanner.Selection {
+        val tree = rootUri() ?: return ProjectRuntimeExecutionPlanner.select(emptyList())
+        val rootItems = children(tree, projectDocumentId)
+        val metadata = rootItems.firstOrNull { it.name == ".project.json" }
+            ?.let { readText(tree, it.id) }
+            ?.let { runCatching { JSONObject(it) }.getOrNull() }
+        return ProjectRuntimeExecutionPlanner.select(
+            relativePaths = rootItems.map { it.name },
+            declaredType = metadata?.optString("type")?.takeIf { it.isNotBlank() },
         )
     }
 

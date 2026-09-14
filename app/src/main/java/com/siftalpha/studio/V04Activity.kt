@@ -21,10 +21,11 @@ import com.siftalpha.studio.project.ProjectConfigurationInspector
 import com.siftalpha.studio.project.ProjectSecretPolicyInspector
 import com.siftalpha.studio.project.V04ProjectGateway
 import com.siftalpha.studio.project.WebProjectInspector
+import com.siftalpha.studio.presentation.ProjectActionPolicy
+import com.siftalpha.studio.presentation.ProjectUiSnapshot
 import com.siftalpha.studio.runtime.ProjectRuntimeController
 import com.siftalpha.studio.runtime.ProjectSecretStore
 import com.siftalpha.studio.runtime.RuntimeCommand
-import com.siftalpha.studio.runtime.RuntimePresentationState
 import com.siftalpha.studio.runtime.RuntimeResult
 import com.siftalpha.studio.runtime.RuntimeState
 import com.siftalpha.studio.runtime.RuntimeWebAvailabilityTracker
@@ -40,6 +41,7 @@ class V04Activity : StudioActivity() {
     private data class Pending(
         val action: ProjectRuntimeController.Action,
         val folderName: String,
+        val documentId: String? = null,
         val cloneSpec: ProjectRuntimeController.GitHubCloneSpec? = null,
         val openBrowserAfterLogs: Boolean = false,
         val browserConfiguredUrl: String? = null,
@@ -267,12 +269,18 @@ class V04Activity : StudioActivity() {
         val configurationSnapshot = configurationUi.snapshot(summary.documentId, project.folderName)
         val webProfile = runCatching { webInspector.inspect(summary.documentId) }
             .getOrElse { WebProjectInspector.Profile(false, null, "none", null, null) }
-        val webSnapshot = webStateStore.snapshot(project.folderName)
-        val typedState = typedStates[project.folderName] ?: RuntimeState.UNKNOWN
+        val stateKey = summary.documentId
+        val webSnapshot = webStateStore.snapshot(stateKey)
+        val typedState = typedStates[stateKey] ?: RuntimeState.UNKNOWN
         val configuredWebUrl = webProfile.configuredLocalUrl()
         val candidateWebUrls = listOfNotNull(webSnapshot.url, configuredWebUrl).distinct()
+        val endpointReachable = if (::webAvailability.isInitialized) {
+            webAvailability.endpointReachable(stateKey, typedState, candidateWebUrls)
+        } else {
+            null
+        }
         val reachableWebUrl = if (::webAvailability.isInitialized) {
-            webAvailability.reachableUrl(project.folderName, typedState, candidateWebUrls)
+            webAvailability.reachableUrl(stateKey, typedState, candidateWebUrls)
         } else {
             null
         }
@@ -281,18 +289,73 @@ class V04Activity : StudioActivity() {
             configuredWebUrl -> webProfile.framework ?: webSnapshot.framework
             else -> webProfile.framework ?: webSnapshot.framework
         }
-        val webUiStatus = RuntimeWebUiStatus.resolve(
+        val web = ProjectUiSnapshot.Web.resolve(
             profileEnabled = webProfile.enabled,
             hasKnownRuntimeUrl = !webSnapshot.url.isNullOrBlank(),
             hasConfiguredLocalUrl = configuredWebUrl != null,
             runtimeState = typedState,
-            endpointReachable = reachableWebUrl != null,
+            endpointReachable = endpointReachable,
+            reachableUrl = reachableWebUrl,
+            framework = reachableWebFramework,
         )
-        val presentationState = RuntimePresentationState.resolve(
-            runtimeState = typedState,
-            webExpected = webProfile.enabled || !webSnapshot.url.isNullOrBlank() || configuredWebUrl != null,
-            endpointReachable = reachableWebUrl != null,
+        val webUiStatus = web.status
+        val pendingItem = pending.values.firstOrNull { item ->
+            item.documentId == summary.documentId ||
+                (item.documentId == null && item.folderName == project.folderName)
+        }
+        val snapshot = ProjectUiSnapshot(
+            identity = ProjectUiSnapshot.Identity(
+                documentId = summary.documentId,
+                folderName = project.folderName,
+                displayName = summary.name,
+                sourceUrl = project.sourceUrl,
+            ),
+            runtime = ProjectUiSnapshot.Runtime.fromPlannerSelection(
+                selection = project.runtimeSelection,
+                supported = runtime.runtimeSupported(),
+                stopCapability = typedState in setOf(
+                    RuntimeState.PREPARING,
+                    RuntimeState.STARTING,
+                    RuntimeState.RUNNING,
+                ),
+            ),
+            environment = ProjectUiSnapshot.Environment.from(environmentStates[stateKey]),
+            configuration = ProjectUiSnapshot.Configuration(
+                requiredCount = configurationSnapshot.preflight.requiredCount,
+                configuredRequiredCount = configurationSnapshot.preflight.configuredRequiredCount,
+                missingRequiredNames = configurationSnapshot.preflight.missingRequired.map { it.name },
+                credentialCandidateCount = configurationSnapshot.allCandidateNames.size,
+            ),
+            lifecycle = typedState,
+            web = web,
+            pending = pendingItem?.let { item ->
+                item.action.toUiOperation()?.let { operation ->
+                    ProjectUiSnapshot.PendingOperation(operation, pending.entries.firstOrNull { it.value === item }?.key)
+                }
+            },
+            evidence = ProjectUiSnapshot.Evidence(
+                lifecycle = if (typedState == RuntimeState.UNKNOWN) {
+                    ProjectUiSnapshot.LifecycleEvidence.NONE
+                } else {
+                    ProjectUiSnapshot.LifecycleEvidence.CACHED
+                },
+                environment = when (environmentStates[stateKey]) {
+                    null -> ProjectUiSnapshot.EnvironmentEvidence.NONE
+                    else -> ProjectUiSnapshot.EnvironmentEvidence.CACHED
+                },
+                web = when (endpointReachable) {
+                    true -> ProjectUiSnapshot.WebEvidence.VERIFIED
+                    false -> ProjectUiSnapshot.WebEvidence.UNREACHABLE
+                    null -> if (candidateWebUrls.isEmpty()) {
+                        ProjectUiSnapshot.WebEvidence.NONE
+                    } else {
+                        ProjectUiSnapshot.WebEvidence.PROBE_IN_FLIGHT
+                    }
+                },
+            ),
         )
+        val policy = ProjectActionPolicy.resolve(snapshot)
+        val presentationState = snapshot.displayedLifecycle
 
         val box = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -318,14 +381,14 @@ class V04Activity : StudioActivity() {
             typeface = Typeface.MONOSPACE
         })
 
-        val environmentLabel = when (environmentStates[project.folderName]) {
+        val environmentLabel = when (environmentStates[stateKey]) {
             true -> getString(R.string.runtime_state_env_ready)
             false -> getString(R.string.runtime_state_env_not_ready)
             null -> getString(R.string.runtime_environment_unknown)
         }
         box.addView(text(getString(R.string.runtime_environment_label, environmentLabel), 12f, false).apply {
             setTextColor(
-                if (environmentStates[project.folderName] == true) {
+                if (environmentStates[stateKey] == true) {
                     Color.rgb(170, 224, 190)
                 } else {
                     Color.rgb(150, 157, 169)
@@ -348,9 +411,9 @@ class V04Activity : StudioActivity() {
 
         val stateLabel = when {
             presentationState != typedState -> presentationState.uiLabel(this)
-            else -> states[project.folderName]
+            else -> states[stateKey]
                 ?: typedState.takeIf { it != RuntimeState.UNKNOWN }?.uiLabel(this)
-                ?: if (environmentStates[project.folderName] != null) {
+                ?: if (environmentStates[stateKey] != null) {
                     getString(R.string.runtime_state_not_running)
                 } else {
                     getString(R.string.runtime_state_not_checked)
@@ -370,41 +433,50 @@ class V04Activity : StudioActivity() {
             )
             setPadding(0, dp(2), 0, dp(5))
         })
+        val policyExplanation = buildString {
+            append(getString(R.string.runtime_policy_summary_label, policy.summary.localizedText()))
+            policy.disableReason?.let { reason ->
+                append('\n')
+                append(getString(R.string.runtime_policy_disabled_reason, reason.localizedText()))
+            }
+        }
+        box.addView(text(policyExplanation, 12f, false).apply {
+            setTextColor(
+                if (policy.disableReason == null) {
+                    Color.rgb(170, 224, 190)
+                } else {
+                    Color.rgb(240, 184, 120)
+                },
+            )
+            setPadding(0, 0, 0, dp(5))
+        })
 
         val row1 = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         row1.addView(smallButton(getString(R.string.runtime_button_edit)) { openEditor(project) }, weight())
-        row1.addView(
-            smallButton(getString(R.string.runtime_button_prepare)) { confirmPrepare(project) },
-            weight().apply { marginStart = dp(5) },
-        )
-        row1.addView(
-            smallButton(getString(R.string.runtime_button_run)) { confirmRun(project) },
-            weight().apply { marginStart = dp(5) },
-        )
+        val prepareButton = smallButton(getString(R.string.runtime_button_prepare)) { confirmPrepare(project) }
+            .apply { isEnabled = policy.isEnabled(ProjectActionPolicy.Action.PREPARE) }
+        row1.addView(prepareButton, weight().apply { marginStart = dp(5) })
+        val runButton = smallButton(getString(R.string.runtime_button_run)) { confirmRun(project) }
+            .apply { isEnabled = policy.isEnabled(ProjectActionPolicy.Action.START) }
+        row1.addView(runButton, weight().apply { marginStart = dp(5) })
         box.addView(row1)
 
         val row2 = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             setPadding(0, dp(5), 0, 0)
         }
-        row2.addView(
-            smallButton(getString(R.string.runtime_button_stop)) {
+        val stopButton = smallButton(getString(R.string.runtime_button_stop)) {
                 dispatch(project, ProjectRuntimeController.Action.STOP)
-            },
-            weight(),
-        )
-        row2.addView(
-            smallButton(getString(R.string.runtime_button_status)) {
+            }.apply { isEnabled = policy.isEnabled(ProjectActionPolicy.Action.STOP) }
+        row2.addView(stopButton, weight())
+        val statusButton = smallButton(getString(R.string.runtime_button_status)) {
                 dispatch(project, ProjectRuntimeController.Action.STATUS)
-            },
-            weight().apply { marginStart = dp(5) },
-        )
-        row2.addView(
-            smallButton(getString(R.string.runtime_button_refresh_logs)) {
+            }.apply { isEnabled = policy.isEnabled(ProjectActionPolicy.Action.STATUS) }
+        row2.addView(statusButton, weight().apply { marginStart = dp(5) })
+        val logsButton = smallButton(getString(R.string.runtime_button_refresh_logs)) {
                 dispatch(project, ProjectRuntimeController.Action.LOGS)
-            },
-            weight().apply { marginStart = dp(5) },
-        )
+            }.apply { isEnabled = policy.isEnabled(ProjectActionPolicy.Action.LOGS) }
+        row2.addView(logsButton, weight().apply { marginStart = dp(5) })
         box.addView(row2)
 
         val row3 = LinearLayout(this).apply {
@@ -413,13 +485,14 @@ class V04Activity : StudioActivity() {
         }
         val browserButton = smallButton(browserButtonLabel(webUiStatus)) {
             openBrowserForProject(
+                projectKey = summary.documentId,
                 folderName = project.folderName,
                 runtimeState = typedState,
                 url = reachableWebUrl,
                 framework = reachableWebFramework,
             )
         }.apply {
-            isEnabled = webUiStatus == RuntimeWebUiStatus.AVAILABLE && reachableWebUrl != null
+            isEnabled = policy.isEnabled(ProjectActionPolicy.Action.OPEN_BROWSER)
             alpha = if (isEnabled) 1f else 0.55f
         }
         row3.addView(browserButton, weight())
@@ -436,6 +509,7 @@ class V04Activity : StudioActivity() {
         box.addView(row3)
 
         box.addView(smallButton(getString(R.string.runtime_button_clean)) { confirmClean(project) }.apply {
+            isEnabled = policy.isEnabled(ProjectActionPolicy.Action.CLEAN)
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT,
@@ -459,6 +533,64 @@ class V04Activity : StudioActivity() {
 
     private fun browserButtonLabel(uiStatus: RuntimeWebUiStatus): String =
         getString(R.string.runtime_browser_label, uiStatus.uiLabel(this))
+
+    private fun ProjectActionPolicy.MessageKey.localizedText(): String = getString(
+        when (this) {
+            ProjectActionPolicy.MessageKey.PENDING_OPERATION -> R.string.runtime_policy_pending_operation
+            ProjectActionPolicy.MessageKey.RUNTIME_HOST_UNAVAILABLE ->
+                R.string.runtime_policy_runtime_host_unavailable
+            ProjectActionPolicy.MessageKey.RUNTIME_SELECTION_REQUIRED ->
+                R.string.runtime_policy_runtime_selection_required
+            ProjectActionPolicy.MessageKey.RUNTIME_ACTIVE -> R.string.runtime_policy_runtime_active
+            ProjectActionPolicy.MessageKey.WEB_ENDPOINT_PENDING -> R.string.runtime_policy_web_endpoint_pending
+            ProjectActionPolicy.MessageKey.CONFIGURATION_REQUIRED ->
+                R.string.runtime_policy_configuration_required
+            ProjectActionPolicy.MessageKey.ENVIRONMENT_PREPARE_REQUIRED ->
+                R.string.runtime_policy_environment_prepare_required
+            ProjectActionPolicy.MessageKey.ENVIRONMENT_STATUS_REQUIRED ->
+                R.string.runtime_policy_environment_status_required
+            ProjectActionPolicy.MessageKey.RUNTIME_STATUS_REQUIRED ->
+                R.string.runtime_policy_runtime_status_required
+            ProjectActionPolicy.MessageKey.READY_TO_RUN -> R.string.runtime_policy_ready_to_run
+        },
+    )
+
+    private fun ProjectActionPolicy.DisableReason.localizedText(): String = getString(
+        when (this) {
+            ProjectActionPolicy.DisableReason.PENDING_OPERATION ->
+                R.string.runtime_policy_reason_pending_operation
+            ProjectActionPolicy.DisableReason.RUNTIME_HOST_UNAVAILABLE ->
+                R.string.runtime_policy_reason_runtime_host_unavailable
+            ProjectActionPolicy.DisableReason.RUNTIME_SELECTION_REQUIRED ->
+                R.string.runtime_policy_reason_runtime_selection_required
+            ProjectActionPolicy.DisableReason.PROCESS_ACTIVE ->
+                R.string.runtime_policy_reason_process_active
+            ProjectActionPolicy.DisableReason.PROCESS_NOT_ACTIVE ->
+                R.string.runtime_policy_reason_process_not_active
+            ProjectActionPolicy.DisableReason.UNKNOWN_RUNTIME_STATE ->
+                R.string.runtime_policy_reason_unknown_runtime_state
+            ProjectActionPolicy.DisableReason.ENVIRONMENT_UNKNOWN ->
+                R.string.runtime_policy_reason_environment_unknown
+            ProjectActionPolicy.DisableReason.ENVIRONMENT_NOT_READY ->
+                R.string.runtime_policy_reason_environment_not_ready
+            ProjectActionPolicy.DisableReason.REQUIRED_CONFIGURATION_MISSING ->
+                R.string.runtime_policy_reason_required_configuration_missing
+            ProjectActionPolicy.DisableReason.WEB_NOT_AVAILABLE ->
+                R.string.runtime_policy_reason_web_not_available
+            ProjectActionPolicy.DisableReason.SOURCE_NOT_AVAILABLE ->
+                R.string.runtime_policy_reason_source_not_available
+        },
+    )
+
+    private fun ProjectRuntimeController.Action.toUiOperation(): ProjectUiSnapshot.Operation? = when (this) {
+        ProjectRuntimeController.Action.PREPARE -> ProjectUiSnapshot.Operation.PREPARE
+        ProjectRuntimeController.Action.START -> ProjectUiSnapshot.Operation.START
+        ProjectRuntimeController.Action.STOP -> ProjectUiSnapshot.Operation.STOP
+        ProjectRuntimeController.Action.STATUS -> ProjectUiSnapshot.Operation.STATUS
+        ProjectRuntimeController.Action.LOGS -> ProjectUiSnapshot.Operation.LOGS
+        ProjectRuntimeController.Action.CLEAN -> ProjectUiSnapshot.Operation.CLEAN
+        ProjectRuntimeController.Action.CLONE_GITHUB -> null
+    }
 
     private fun openEditor(project: V04ProjectGateway.RuntimeProject) {
         startActivity(
@@ -611,6 +743,15 @@ class V04Activity : StudioActivity() {
         browserFramework: String? = null,
     ) {
         if (!ensureRuntime()) return
+        // The card is rebuilt after every state transition, but an old dialog or click callback can
+        // still arrive after that rebuild. Re-check the stable project identity at the side-effect
+        // boundary so one project cannot acquire two mutable Runtime operations.
+        if (pending.values.any { item ->
+                item.documentId == project.summary.documentId ||
+                    (item.documentId == null && item.folderName == project.folderName)
+            }) {
+            return
+        }
         val command = try {
             when (action) {
                 ProjectRuntimeController.Action.PREPARE -> runtime.prepare(project)
@@ -635,7 +776,7 @@ class V04Activity : StudioActivity() {
                 action == ProjectRuntimeController.Action.STOP ||
                 action == ProjectRuntimeController.Action.CLEAN)
         ) {
-            webAvailability.invalidate(project.folderName)
+            webAvailability.invalidate(project.summary.documentId)
         }
         projectOutputs.write(
             project.folderName,
@@ -647,28 +788,33 @@ class V04Activity : StudioActivity() {
         }
         val pendingItem = Pending(
             action = action,
+            documentId = project.summary.documentId,
             folderName = project.folderName,
             openBrowserAfterLogs = openBrowserAfterLogs,
             browserConfiguredUrl = browserConfiguredUrl,
             browserFramework = browserFramework,
         )
-        states[project.folderName] = when (action) {
+        val stateKey = project.summary.documentId
+        states[stateKey] = when (action) {
             ProjectRuntimeController.Action.PREPARE -> getString(R.string.runtime_action_preparing)
             ProjectRuntimeController.Action.START -> getString(R.string.runtime_action_starting)
             ProjectRuntimeController.Action.STOP -> getString(R.string.runtime_action_stopping)
             ProjectRuntimeController.Action.STATUS -> getString(R.string.runtime_action_checking)
             ProjectRuntimeController.Action.LOGS ->
-                states[project.folderName] ?: getString(R.string.runtime_state_not_checked)
+                states[stateKey] ?: getString(R.string.runtime_state_not_checked)
             ProjectRuntimeController.Action.CLEAN -> getString(R.string.runtime_action_cleaning)
             ProjectRuntimeController.Action.CLONE_GITHUB -> getString(R.string.runtime_action_importing)
         }
         when (action) {
-            ProjectRuntimeController.Action.START -> typedStates[project.folderName] = RuntimeState.STARTING
-            ProjectRuntimeController.Action.PREPARE -> typedStates[project.folderName] = RuntimeState.PREPARING
+            ProjectRuntimeController.Action.START -> typedStates[stateKey] = RuntimeState.STARTING
+            ProjectRuntimeController.Action.PREPARE -> typedStates[stateKey] = RuntimeState.PREPARING
             else -> Unit
         }
         refresh()
         registerPending(id, pendingItem)
+        // Preserve the existing fast-result reconciliation order, but expose a still-pending
+        // operation when the result has not already been consumed synchronously.
+        if (pending.containsKey(id)) refresh()
     }
 
     private fun registerPending(id: Int, item: Pending) {
@@ -676,19 +822,22 @@ class V04Activity : StudioActivity() {
         TermuxResultBus.consume(id)?.let(resultListener)
     }
 
-    private fun updateEnvironmentState(folderName: String, stdout: String): Boolean? {
+    private fun updateEnvironmentState(stateKey: String, stdout: String): Boolean? {
         when {
-            "SIFTALPHA_ENV=READY" in stdout -> environmentStates[folderName] = true
+            "SIFTALPHA_ENV=READY" in stdout -> environmentStates[stateKey] = true
             "SIFTALPHA_ENV=NOT_READY" in stdout || "SIFTALPHA_ENV=CLEANED" in stdout ->
-                environmentStates[folderName] = false
+                environmentStates[stateKey] = false
         }
-        return environmentStates[folderName]
+        return environmentStates[stateKey]
     }
 
     private fun showRuntimeConfigurationFinding(item: Pending, result: RuntimeResult): Boolean {
         if (!::configurationUi.isInitialized) return false
         val project = runCatching {
-            gateway.projects().firstOrNull { it.folderName == item.folderName }
+            gateway.projects().firstOrNull {
+                it.summary.documentId == item.documentId ||
+                    (item.documentId == null && it.folderName == item.folderName)
+            }
         }.getOrNull() ?: return false
         val text = buildString {
             append(result.stdout)
@@ -706,24 +855,25 @@ class V04Activity : StudioActivity() {
     }
 
     private fun handleResult(item: Pending, result: RuntimeResult) {
+        val stateKey = item.documentId ?: item.folderName
         val stdout = result.stdout
         val success = result.exitCode == 0 && result.internalErrorMessage.isBlank()
         val runtimeState = RuntimeState.fromOutput(stdout)
         if (runtimeState != RuntimeState.UNKNOWN) {
-            typedStates[item.folderName] = runtimeState
+            typedStates[stateKey] = runtimeState
         }
         val runtimeUrl = RuntimeWebUrl.extractLocalHttpUrl(stdout)
         runtimeUrl?.let { url ->
-            webStateStore.rememberUrl(item.folderName, url, item.browserFramework)
+            webStateStore.rememberUrl(item.documentId ?: item.folderName, url, item.browserFramework)
         }
-        updateEnvironmentState(item.folderName, stdout)
+        updateEnvironmentState(stateKey, stdout)
 
         when (item.action) {
             ProjectRuntimeController.Action.CLONE_GITHUB -> {
                 if (success && "SIFTALPHA_CLONE=OK" in stdout) {
                     item.cloneSpec?.let { attachCloneMetadata(it) }
                 } else {
-                    states[item.folderName] = getString(R.string.runtime_github_import_failed)
+                    states[stateKey] = getString(R.string.runtime_github_import_failed)
                     refresh()
                     runtimeError(result)
                 }
@@ -731,22 +881,22 @@ class V04Activity : StudioActivity() {
             ProjectRuntimeController.Action.PREPARE -> {
                 if (::prepareLiveProgress.isInitialized) prepareLiveProgress.finish(item.folderName)
                 val prepared = success && "SIFTALPHA_ENV=READY" in stdout
-                states[item.folderName] = if (prepared) {
+                states[stateKey] = if (prepared) {
                     getString(R.string.runtime_state_not_running)
                 } else {
                     getString(R.string.runtime_prepare_failed)
                 }
                 if (prepared) {
-                    environmentStates[item.folderName] = true
-                    typedStates[item.folderName] = RuntimeState.UNKNOWN
+                    environmentStates[stateKey] = true
+                    typedStates[stateKey] = RuntimeState.UNKNOWN
                 } else {
-                    typedStates[item.folderName] = RuntimeState.ENVIRONMENT_ERROR
+                    typedStates[stateKey] = RuntimeState.ENVIRONMENT_ERROR
                 }
                 refresh()
                 if (!success) runtimeError(result)
             }
             ProjectRuntimeController.Action.START -> {
-                states[item.folderName] = when (runtimeState) {
+                states[stateKey] = when (runtimeState) {
                     RuntimeState.RUNNING,
                     RuntimeState.EXITED_SUCCESS,
                     RuntimeState.EXITED_ERROR,
@@ -762,7 +912,11 @@ class V04Activity : StudioActivity() {
 
                 val sourceOrConfiguredUrl = item.browserConfiguredUrl
                 if (success && runtimeState == RuntimeState.RUNNING && sourceOrConfiguredUrl != null) {
-                    webStateStore.rememberUrl(item.folderName, sourceOrConfiguredUrl, item.browserFramework)
+                    webStateStore.rememberUrl(
+                        item.documentId ?: item.folderName,
+                        sourceOrConfiguredUrl,
+                        item.browserFramework,
+                    )
                 }
                 refresh()
 
@@ -775,7 +929,10 @@ class V04Activity : StudioActivity() {
                     sourceOrConfiguredUrl == null
                 ) {
                     val currentProject = runCatching {
-                        gateway.projects().firstOrNull { it.folderName == item.folderName }
+                        gateway.projects().firstOrNull {
+                            it.summary.documentId == item.documentId ||
+                                (item.documentId == null && it.folderName == item.folderName)
+                        }
                     }.getOrNull()
                     if (currentProject != null) {
                         dispatch(
@@ -787,13 +944,13 @@ class V04Activity : StudioActivity() {
                 }
             }
             ProjectRuntimeController.Action.STOP -> {
-                states[item.folderName] = if (success) {
+                states[stateKey] = if (success) {
                     val stoppedState = if (runtimeState == RuntimeState.UNKNOWN) {
                         RuntimeState.STOPPED_BY_USER
                     } else {
                         runtimeState
                     }
-                    typedStates[item.folderName] = stoppedState
+                    typedStates[stateKey] = stoppedState
                     stoppedState.uiLabel(this)
                 } else {
                     getString(R.string.runtime_stop_failed)
@@ -802,7 +959,7 @@ class V04Activity : StudioActivity() {
                 if (!success) runtimeError(result)
             }
             ProjectRuntimeController.Action.STATUS -> {
-                states[item.folderName] = if (runtimeState != RuntimeState.UNKNOWN) {
+                states[stateKey] = if (runtimeState != RuntimeState.UNKNOWN) {
                     runtimeState.uiLabel(this)
                 } else if (success) {
                     getString(R.string.runtime_state_not_running)
@@ -814,7 +971,7 @@ class V04Activity : StudioActivity() {
             }
             ProjectRuntimeController.Action.LOGS -> {
                 if (runtimeState != RuntimeState.UNKNOWN) {
-                    states[item.folderName] = runtimeState.uiLabel(this)
+                    states[stateKey] = runtimeState.uiLabel(this)
                     refresh()
                 }
                 if (!success) {
@@ -831,12 +988,12 @@ class V04Activity : StudioActivity() {
                 }
             }
             ProjectRuntimeController.Action.CLEAN -> {
-                states[item.folderName] = getString(
+                states[stateKey] = getString(
                     if (success) R.string.runtime_state_not_running else R.string.runtime_clean_failed,
                 )
                 if (success) {
-                    typedStates[item.folderName] = RuntimeState.UNKNOWN
-                    environmentStates[item.folderName] = false
+                    typedStates[stateKey] = RuntimeState.UNKNOWN
+                    environmentStates[stateKey] = false
                 }
                 refresh()
                 if (!success) runtimeError(result)
@@ -845,6 +1002,7 @@ class V04Activity : StudioActivity() {
     }
 
     private fun openBrowserForProject(
+        projectKey: String,
         folderName: String,
         runtimeState: RuntimeState,
         url: String?,
@@ -865,7 +1023,7 @@ class V04Activity : StudioActivity() {
             return
         }
         if (!::webAvailability.isInitialized) return
-        webAvailability.verifyNow(folderName, url) { listening ->
+        webAvailability.verifyNow(projectKey, url) { listening ->
             if (!listening) {
                 errorDialog(
                     getString(R.string.runtime_web_not_listening_title),
@@ -873,13 +1031,14 @@ class V04Activity : StudioActivity() {
                 )
                 return@verifyNow
             }
-            openBrowserUrl(folderName, url, framework)
+            openBrowserUrl(projectKey, folderName, url, framework)
         }
     }
 
     private fun openBrowserFromRuntimeLogs(item: Pending, stdout: String) {
         val logUrl = RuntimeWebUrl.extractLocalHttpUrl(stdout)
-        val stored = webStateStore.snapshot(item.folderName)
+        val projectKey = item.documentId ?: item.folderName
+        val stored = webStateStore.snapshot(projectKey)
         val url = logUrl ?: stored.url ?: item.browserConfiguredUrl
         if (url == null) {
             errorDialog(
@@ -889,6 +1048,7 @@ class V04Activity : StudioActivity() {
             return
         }
         openBrowserForProject(
+            projectKey = projectKey,
             folderName = item.folderName,
             runtimeState = RuntimeState.RUNNING,
             url = url,
@@ -896,7 +1056,7 @@ class V04Activity : StudioActivity() {
         )
     }
 
-    private fun openBrowserUrl(folderName: String, url: String, framework: String?) {
+    private fun openBrowserUrl(projectKey: String, folderName: String, url: String, framework: String?) {
         val validatedUrl = RuntimeWebUrl.extractLocalHttpUrl("SIFTALPHA_WEB_URL=$url")
         if (validatedUrl == null) {
             errorDialog(
@@ -905,7 +1065,7 @@ class V04Activity : StudioActivity() {
             )
             return
         }
-        webStateStore.rememberUrl(folderName, validatedUrl, framework)
+        webStateStore.rememberUrl(projectKey, validatedUrl, framework)
 
         val uri = Uri.parse(validatedUrl)
         val browsers = discoverInstalledBrowsers(uri)
@@ -1225,7 +1385,11 @@ class V04Activity : StudioActivity() {
                     )
                     registerPending(
                         id,
-                        Pending(ProjectRuntimeController.Action.CLONE_GITHUB, spec.projectName, spec),
+                        Pending(
+                            action = ProjectRuntimeController.Action.CLONE_GITHUB,
+                            folderName = spec.projectName,
+                            cloneSpec = spec,
+                        ),
                     )
                 } catch (e: Throwable) {
                     errorDialog(
@@ -1285,9 +1449,10 @@ class V04Activity : StudioActivity() {
             }
             runOnUiThread {
                 if (project != null) {
-                    states[spec.projectName] = getString(R.string.runtime_state_not_checked)
-                    typedStates[spec.projectName] = RuntimeState.UNKNOWN
-                    environmentStates.remove(spec.projectName)
+                    val stateKey = project!!.summary.documentId
+                    states[stateKey] = getString(R.string.runtime_state_not_checked)
+                    typedStates[stateKey] = RuntimeState.UNKNOWN
+                    environmentStates.remove(stateKey)
                     output.append("\n${getString(R.string.runtime_import_completed, spec.sourceUrl)}")
                     toast(getString(R.string.runtime_project_imported, spec.projectName))
                 } else {
