@@ -17,7 +17,10 @@ changes, validation evidence, artifact information, device acceptance, and next 
   unmerged（开放且未合并）.
 - Candidate（候选版本）: 0.8.0-alpha12, Android versionCode 88, application id（应用标识）
   com.siftalpha.studio.
-- Code candidate commit（代码候选提交）: b6135d705441b8b3149f4249defe39e6e801a72f.
+- Code candidate commit（代码候选提交）: 00ee9cbe1af5590d4296adf07eaa472bbd4e5a8c.
+- W2 hardening（W2 加固）: persist `STARTING`/`PREPARING`（启动中/准备中） before a callback can
+  arrive, so process-death recovery（进程被系统回收后的恢复） still issues a real STATUS probe;
+  redact live preparation-log tails before rendering or copying（渲染或复制前脱敏准备日志尾部）.
 - Scope（范围）: project-scoped lifecycle resolution（项目级生命周期解析）, foreground status
   recovery（前台状态恢复）, failure-reason persistence（失败原因持久化）, duplicate-start
   protection（重复启动保护）, runtime-discovery persistence（运行配置发现持久化）, and
