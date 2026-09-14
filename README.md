@@ -16,6 +16,16 @@ The current public candidate is **v0.8.0-alpha9** (`versionCode 85`). The Androi
 
 The alpha9 candidate is an active development release. Automated checks are part of the public baseline; real-device and real-user acceptance should be evaluated separately for each change.
 
+## Project continuity and records
+
+Start a new development session by reading [AGENTS.md](AGENTS.md), then
+[docs/PROJECT_CONTEXT.md](docs/PROJECT_CONTEXT.md), and the newest entry in
+[docs/DEV_LOG.md](docs/DEV_LOG.md). These files are the canonical project handoff
+（项目交接记录） for durable requirements, current status, decisions, validation evidence,
+artifact（构建产物） details, and real-device acceptance. Detailed feature notes remain in
+[`docs/DEV_NOTES/`](docs/DEV_NOTES/); repeatable operational procedures remain in
+[`docs/WORKFLOWS/`](docs/WORKFLOWS/).
+
 ## Android and runtime requirements
 
 The build targets Android API 36, uses JDK 17, Gradle 9.3.1, Android Gradle Plugin 9.1.1, and Build Tools 36.0.0. The minimum Android API is 26.
