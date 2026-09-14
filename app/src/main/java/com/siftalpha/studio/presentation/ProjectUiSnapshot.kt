@@ -164,6 +164,8 @@ data class ProjectUiSnapshot(
         val configuredRequiredCount: Int,
         val missingRequiredNames: List<String> = emptyList(),
         val credentialCandidateCount: Int = 0,
+        /** True only after a running project has reported an actionable configuration finding. */
+        val runtimeConfigurationDiscovered: Boolean = false,
     ) {
         init {
             require(requiredCount >= 0) { "requiredCount must not be negative" }

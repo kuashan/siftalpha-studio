@@ -48,7 +48,7 @@
     <string name="runtime_policy_environment_prepare_required">The runtime environment is not prepared. Prepare it first.</string>
     <string name="runtime_policy_environment_status_required">The runtime environment state is unknown. Check status first.</string>
     <string name="runtime_policy_runtime_status_required">The runtime state is unknown. Check status first.</string>
-    <string name="runtime_policy_ready_to_run">The runtime environment, configuration, and lifecycle state are ready to start.</string>
+    <string name="runtime_policy_ready_to_run">The runtime environment is prepared and the project can start; Studio will prompt after launch if configuration is needed.</string>
     <string name="runtime_policy_reason_pending_operation">another operation is already running</string>
     <string name="runtime_policy_reason_runtime_host_unavailable">runtime execution is unavailable on this device</string>
     <string name="runtime_policy_reason_runtime_selection_required">the project runtime is not uniquely determined</string>
@@ -58,6 +58,7 @@
     <string name="runtime_policy_reason_environment_unknown">the runtime environment state has not been confirmed</string>
     <string name="runtime_policy_reason_environment_not_ready">the runtime environment is not prepared</string>
     <string name="runtime_policy_reason_required_configuration_missing">required configuration is missing</string>
+    <string name="runtime_policy_reason_configuration_discovery_required">the project has not reported a configuration requirement yet</string>
     <string name="runtime_policy_reason_web_not_available">the Web endpoint is not verified as available</string>
     <string name="runtime_policy_reason_source_not_available">no source link is available</string>
     <string name="runtime_browser_label">Browser · %1$s</string>

@@ -48,7 +48,7 @@
     <string name="runtime_policy_environment_prepare_required">运行环境尚未准备，请先准备环境。</string>
     <string name="runtime_policy_environment_status_required">运行环境状态未知，请先检查状态。</string>
     <string name="runtime_policy_runtime_status_required">运行状态未知，请先检查状态。</string>
-    <string name="runtime_policy_ready_to_run">运行环境、配置和运行状态已满足启动条件。</string>
+    <string name="runtime_policy_ready_to_run">运行环境已准备，可以启动项目；如需配置，Studio 会在运行后提示。</string>
     <string name="runtime_policy_reason_pending_operation">已有操作正在执行</string>
     <string name="runtime_policy_reason_runtime_host_unavailable">当前设备不支持运行时</string>
     <string name="runtime_policy_reason_runtime_selection_required">无法唯一确定项目运行时</string>
@@ -58,6 +58,7 @@
     <string name="runtime_policy_reason_environment_unknown">运行环境状态尚未确认</string>
     <string name="runtime_policy_reason_environment_not_ready">运行环境未准备</string>
     <string name="runtime_policy_reason_required_configuration_missing">缺少必需配置</string>
+    <string name="runtime_policy_reason_configuration_discovery_required">尚未从运行结果发现配置需求</string>
     <string name="runtime_policy_reason_web_not_available">Web 端点尚未确认可用</string>
     <string name="runtime_policy_reason_source_not_available">没有可用的来源链接</string>
     <string name="runtime_browser_label">浏览器 · %1$s</string>

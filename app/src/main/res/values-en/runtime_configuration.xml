@@ -6,6 +6,7 @@
     <string name="runtime_configuration_status_none">Configuration: no required items declared</string>
     <string name="runtime_configuration_status_candidates">Configuration: %1$d configurable items found (does not block run)</string>
     <string name="runtime_configuration_status_missing">Configuration: %1$d required items missing</string>
+    <string name="runtime_configuration_status_pending_discovery">Configuration: waiting for the first run to detect requirements</string>
     <string name="runtime_configuration_status_ready">Configuration: required items satisfied</string>
     <string name="runtime_configuration_button">Configuration</string>
     <string name="runtime_configuration_title">Project configuration · %1$s</string>

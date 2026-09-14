@@ -9,34 +9,40 @@ Branch: `w1c-config-wizard`
 W1C extends Runtime Center's existing Configuration action so a Python project can expose useful
 configuration inputs without requiring a project author to add metadata first. Detection is
 read-only and bounded; Studio never executes a project during inspection and never rewrites its
-source files.
+source files. Environment preparation is independent from configuration discovery: a prepared
+environment enables the first run, and the running project can then report the configuration it
+actually needs.
 
 ## Detection rules
 
-- `.project.json.requiredEnv` remains the authoritative explicit contract.
+- `.project.json.requiredEnv` remains the authoritative explicit configuration contract, but it
+  does not block the first run; the project is allowed to report its runtime requirement first.
 - `os.environ["NAME"]` and `environ["NAME"]` are inferred as required because Python raises when
   the variable is absent.
 - `os.getenv("NAME")`, `os.environ.get("NAME")`, and `environ.get("NAME")` are surfaced as
-  optional candidates. Defaults are not treated as proof that an input is required.
+  optional candidates. Defaults are not treated as proof that an input is required, and static
+  candidates do not block the first run.
 - `.env.example` assignments are surfaced as optional candidates, including non-secret values such
   as ports or regions.
 - Common process variables such as `PATH`, `HOME`, and `TERM` are ignored. Names and values are
   handled separately: only names enter the inspection result, while values remain in the protected
   configuration store or the project runtime environment.
 - Inspection reads at most eight eligible Python files and skips common generated/dependency
-  directories. Runtime errors can still add an explicitly reported missing environment name as a
-  configuration hint.
+  directories. Runtime errors can add an explicitly reported missing environment name as a
+  configuration hint; those names are required for the current repair cycle.
 
 ## Wizard behavior
 
-- Tapping Configuration opens a sequential wizard when any detected item is not configured.
-- Required items cannot be skipped; optional candidates can be skipped.
+- Configuration remains disabled until a running project reports an actionable configuration
+  finding. Tapping Configuration then opens a sequential wizard when any discovered item is not
+  configured.
+- Runtime-reported missing items cannot be skipped; static optional candidates can be skipped.
 - Save and continue advances to the next pending item. After the final item, Runtime Center
-  refreshes the project card.
+  refreshes the project card. If at least one value was saved during a runtime-repair flow, the
+  project is started once automatically. Skipping optional candidates alone does not trigger a
+  retry, preventing a repeated failure/prompt loop.
 - Once all detected items are configured, the existing list editor remains available for update or
-  clearing Studio-managed values.
-- Launch preflight uses the same one-item-at-a-time wizard for missing required values, then
-  re-checks readiness before starting the process.
+  clearing Studio-managed values; saving an edited value also triggers the pending retry.
 
 ## Secret boundary
 

@@ -29,6 +29,25 @@ class RuntimeConfigurationDiagnosticTest {
     }
 
     @Test
+    fun `python environment key error exposes credential shaped name`() {
+        val result = RuntimeConfigurationDiagnostic.inspect(
+            "Traceback (most recent call last):\nKeyError: 'BINANCE_API_KEY'",
+        )
+
+        assertEquals(listOf("BINANCE_API_KEY"), result.missingEnvironmentNames)
+        assertTrue(result.hasActionableFinding)
+    }
+
+    @Test
+    fun `ordinary python key error is not reclassified as configuration`() {
+        val result = RuntimeConfigurationDiagnostic.inspect(
+            "KeyError: 'missing_dictionary_key'",
+        )
+
+        assertFalse(result.hasActionableFinding)
+    }
+
+    @Test
     fun `generic api key warning never invents a variable name`() {
         val result = RuntimeConfigurationDiagnostic.inspect(
             "Configuration error: API key is required to continue",

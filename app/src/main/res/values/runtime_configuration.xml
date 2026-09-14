@@ -6,6 +6,7 @@
     <string name="runtime_configuration_status_none">配置：未声明必需项</string>
     <string name="runtime_configuration_status_candidates">配置：发现 %1$d 项可配置项（不阻止运行）</string>
     <string name="runtime_configuration_status_missing">配置：缺少 %1$d 项必需配置</string>
+    <string name="runtime_configuration_status_pending_discovery">配置：等待首次运行检测配置需求</string>
     <string name="runtime_configuration_status_ready">配置：必需项已满足</string>
     <string name="runtime_configuration_button">配置</string>
     <string name="runtime_configuration_title">项目配置 · %1$s</string>

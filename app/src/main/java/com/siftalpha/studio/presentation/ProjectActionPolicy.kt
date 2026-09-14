@@ -55,6 +55,7 @@ object ProjectActionPolicy {
         ENVIRONMENT_UNKNOWN("runtime_policy_reason_environment_unknown"),
         ENVIRONMENT_NOT_READY("runtime_policy_reason_environment_not_ready"),
         REQUIRED_CONFIGURATION_MISSING("runtime_policy_reason_required_configuration_missing"),
+        CONFIGURATION_DISCOVERY_REQUIRED("runtime_policy_reason_configuration_discovery_required"),
         WEB_NOT_AVAILABLE("runtime_policy_reason_web_not_available"),
         SOURCE_NOT_AVAILABLE("runtime_policy_reason_source_not_available"),
     }
@@ -112,7 +113,11 @@ object ProjectActionPolicy {
     fun resolve(snapshot: ProjectUiSnapshot): Result {
         val actions = linkedMapOf<Action, ActionDecision>()
         actions[Action.EDIT] = enabled()
-        actions[Action.CONFIGURE] = enabled()
+        actions[Action.CONFIGURE] = if (snapshot.configuration.runtimeConfigurationDiscovered) {
+            enabled()
+        } else {
+            disabled(DisableReason.CONFIGURATION_DISCOVERY_REQUIRED)
+        }
         actions[Action.OPEN_SOURCE] = if (snapshot.identity.sourceUrl.isNullOrBlank()) {
             disabled(DisableReason.SOURCE_NOT_AVAILABLE)
         } else {
@@ -129,12 +134,13 @@ object ProjectActionPolicy {
         )
         if (!snapshot.runtime.supported) {
             runtimeActions.forEach { actions[it] = disabled(DisableReason.RUNTIME_HOST_UNAVAILABLE) }
+            actions[Action.CONFIGURE] = disabled(DisableReason.RUNTIME_HOST_UNAVAILABLE)
             actions[Action.OPEN_BROWSER] = disabled(DisableReason.WEB_NOT_AVAILABLE)
             return result(
                 actions = actions,
                 summary = MessageKey.RUNTIME_HOST_UNAVAILABLE,
                 primaryAction = null,
-                directSecondaryAction = Action.CONFIGURE,
+                directSecondaryAction = null,
                 disableReason = DisableReason.RUNTIME_HOST_UNAVAILABLE,
                 detailEntry = DetailEntry.RUNTIME,
             )
@@ -142,6 +148,7 @@ object ProjectActionPolicy {
 
         if (snapshot.pending != null) {
             runtimeActions.forEach { actions[it] = disabled(DisableReason.PENDING_OPERATION) }
+            actions[Action.CONFIGURE] = disabled(DisableReason.PENDING_OPERATION)
             actions[Action.OPEN_BROWSER] = disabled(DisableReason.PENDING_OPERATION)
             return result(
                 actions = actions,
@@ -204,23 +211,12 @@ object ProjectActionPolicy {
             actions[Action.STOP] = disabled(DisableReason.PROCESS_NOT_ACTIVE)
             when {
                 selectionReason != null -> {
+                    actions[Action.CONFIGURE] = disabled(selectionReason)
                     primaryAction = Action.STATUS
                     secondaryAction = Action.CLEAN
                     message = MessageKey.RUNTIME_SELECTION_REQUIRED
                     disableReason = selectionReason
                     detailEntry = DetailEntry.RUNTIME
-                }
-                snapshot.configuration.missingRequiredCount > 0 -> {
-                    actions[Action.START] = disabled(DisableReason.REQUIRED_CONFIGURATION_MISSING)
-                    primaryAction = Action.CONFIGURE
-                    secondaryAction = if (snapshot.environment.readiness == ProjectUiSnapshot.Readiness.NOT_READY) {
-                        Action.PREPARE
-                    } else {
-                        Action.STATUS
-                    }
-                    message = MessageKey.CONFIGURATION_REQUIRED
-                    disableReason = DisableReason.REQUIRED_CONFIGURATION_MISSING
-                    detailEntry = DetailEntry.CONFIGURATION
                 }
                 snapshot.environment.readiness == ProjectUiSnapshot.Readiness.NOT_READY -> {
                     actions[Action.START] = disabled(DisableReason.ENVIRONMENT_NOT_READY)
@@ -237,15 +233,6 @@ object ProjectActionPolicy {
                     message = MessageKey.ENVIRONMENT_STATUS_REQUIRED
                     disableReason = DisableReason.ENVIRONMENT_UNKNOWN
                     detailEntry = DetailEntry.ENVIRONMENT
-                }
-                snapshot.lifecycle == RuntimeState.UNKNOWN ||
-                    snapshot.evidence.lifecycle == ProjectUiSnapshot.LifecycleEvidence.NONE -> {
-                    actions[Action.START] = disabled(DisableReason.UNKNOWN_RUNTIME_STATE)
-                    primaryAction = Action.STATUS
-                    secondaryAction = Action.PREPARE
-                    message = MessageKey.RUNTIME_STATUS_REQUIRED
-                    disableReason = DisableReason.UNKNOWN_RUNTIME_STATE
-                    detailEntry = DetailEntry.RUNTIME
                 }
                 else -> {
                     primaryAction = Action.START

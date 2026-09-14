@@ -2,7 +2,7 @@
 
 SiftAlpha Studio is an Android workspace for managing, editing, preparing, and running Python projects and local automation services. It brings project files, runtime state, dependency preparation, logs, and recovery actions into one mobile-first workflow.
 
-The current public candidate is **v0.8.0-alpha8** (`versionCode 84`). The Android application id is `com.siftalpha.studio`.
+The current public candidate is **v0.8.0-alpha9** (`versionCode 85`). The Android application id is `com.siftalpha.studio`.
 
 ## Current capabilities
 
@@ -14,7 +14,7 @@ The current public candidate is **v0.8.0-alpha8** (`versionCode 84`). The Androi
 - Runtime storage visibility and cleanup safeguards
 - English, Simplified Chinese, Traditional Chinese, Japanese, and Korean resources
 
-The alpha8 candidate is an active development release. Automated checks are part of the public baseline; real-device and real-user acceptance should be evaluated separately for each change.
+The alpha9 candidate is an active development release. Automated checks are part of the public baseline; real-device and real-user acceptance should be evaluated separately for each change.
 
 ## Android and runtime requirements
 
