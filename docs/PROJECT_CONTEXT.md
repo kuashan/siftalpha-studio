@@ -42,11 +42,13 @@ than silently relying on the old note.
 
 ### Current W2 alpha12 validation status（当前 W2 alpha12 验证状态）
 
-- Code candidate commit（代码候选提交）: f7466e370bbfe915de98f5adb9726581bd2d8010.
+- Code candidate commit（代码候选提交）: b6135d705441b8b3149f4249defe39e6e801a72f.
 - W2 implementation is complete on the PR branch, but the three public cloud checks（云端检查）
   have not yet run for this candidate: NOT RUN（未运行）.
-- Trusted Signed Debug APK（稳定签名调试包）: NOT REQUESTED（未请求） until the same-commit
-  public checks pass.
+- Trusted Signed Debug APK（稳定签名调试包）: NOT PRODUCED（未生成）. The exact fallback comment
+  was posted, but the candidate workflow failed safely because same-commit public checks are missing.
+- Candidate workflow（候选流程）: run 34832205686 FAILED（失败）, missing Android Debug APK,
+  Exact Head Unit, and Localization for the current PR head; no signing step or APK artifact was produced.
 - Device acceptance（真机验收）: NOT TESTED（未测试）. CI（持续集成）结果不能代替真机验收.
 
 ### Latest alpha11 cloud validation（最近一次 alpha11 云端验证）
@@ -184,5 +186,7 @@ runtime payload. Never write them to source files, `.env`, logs, GitHub, or this
 The protected candidate-signing workflow is available on `main`, and the direct `/stable-debug`
 path is the current stable-signing trigger for PR #5. W2 alpha12 implementation is committed to
 `codex/w1c-config-wizard`, but public checks and the protected candidate package are still pending.
-Run the three public checks on the final W2 commit, then request the Trusted Signed Debug APK（稳定
-签名调试包）. Keep PR #5 Draft and do not merge automatically.
+Run the three public checks on the final W2 commit through a GitHub-authenticated synchronization or
+manual trigger, then request the Trusted Signed Debug APK（稳定签名调试包）. The current connector
+cannot call workflow_dispatch（手动触发工作流）, so no APK is available yet. Keep PR #5 Draft and do
+not merge automatically.
